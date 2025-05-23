@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  <meta charset="UTF-8">
+  <title>원클릭 롤20 스타일</title>
+  <style>
+    @font-face {
+    font-family: 'Pretendard-Regular';
+    src: url('https://fastly.jsdelivr.net/gh/Project-Noonnu/noonfonts_2107@1.1/Pretendard-Regular.woff') format('woff');
+    font-weight: 400;
+    font-style: normal;
+}
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Pretendard-Regular';
+    }
+
+    .container {
+      display: flex;
+      height: 100vh;
+    }
+
+    .sidebar {
+      width: 320px;
+      padding: 20px;
+      background-color: #f7f7f7;
+      border-right: 1px solid #ccc;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    .drop-zone {
+      border: 2px dashed #aaa;
+      border-radius: 10px;
+      padding: 20px;
+      text-align: center;
+      color: #666;
+      background-color: #fff;
+      transition: background-color 0.3s, border-color 0.3s;
+      cursor: pointer;
+    }
+
+    .drop-zone.dragover {
+      background-color: #eef6ff;
+      border-color: #3399ff;
+      color: #3399ff;
+    }
+
+    .preview-container {
+      flex: 1;
+      height: 100%;
+      overflow: auto;
+      background-color: #1f1e22;
+      color: white;
+      padding: 10px;
+    }
+    #preview {
+      flex: 1;
+      width: 100%;
+      height: 100%;
+    }
+
+    button {
+      padding: 10px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    label {
+      font-size: 14px;
+    }
+
+    input[type="number"] {
+      width: 60px;
+      padding: 5px;
+      margin-left: 5px;
+    }
+
+    .CodeMirror {
+    height: 100px !important;
+    }
+
+  </style>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+<!-- ✅ CodeMirror 5 CSS & JS CDN -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+
+<!-- ✅ 선택적으로 HTML 모드 추가 (사용자 HTML 편집용이라면) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/htmlmixed/htmlmixed.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/xml/xml.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/css/css.min.js"></script>
+
+  <script>
+     document.addEventListener("DOMContentLoaded", function () {
+        const dropZone = document.getElementById("dropZone");
+        const previewArea = document.getElementById("previewArea");
+
+      });
+
+      $(document).ready(function () {
+          editor = CodeMirror.fromTextArea($(".codemirror-textarea")[0], {
+            lineNumbers: true,
+            mode: "htmlmixed"
+          });
+
+
+          // HTML 복사 버튼
+          document.getElementById('copyHTMLBtn').addEventListener('click', () => {
+            const html = getIframeHTML();
+            navigator.clipboard.writeText(html).then(() => {
+              alert('HTML이 복사되었습니다.');
+            }).catch(err => {
+              alert('복사 실패: ' + err);
+            });
+          });
+
+          // HTML 저장 버튼
+          document.getElementById('saveHTMLBtn').addEventListener('click', () => {
+            const filename = document.getElementById('filenameInput').value.trim() || 'roll20-wrap';
+
+            const html = getIframeHTML();
+            const blob = new Blob([html], { type: 'text/html' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = filename+'.html';
+            a.click();
+            URL.revokeObjectURL(a.href);
+          });
+
+          // TXT 저장 버튼
+          document.getElementById('saveTxtBtn').addEventListener('click', () => {
+            const filename = document.getElementById('filenameInput').value.trim() || 'roll20-wrap';
+            
+            const html = getIframeHTML();
+            const blob = new Blob([html], { type: 'text/plain' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = filename + '.txt';
+            a.click();
+            URL.revokeObjectURL(a.href);
+          });
+
+
+
+          $("#applyStyleBtn").on("click", function () {
+            const htmlCode = editor.getValue();
+            const iframe = document.getElementById("preview");
+            const doc = iframe.contentDocument || iframe.contentWindow.document;
+            let lineH = $("#paddingInput").val();
+            doc.open();
+            doc.write(htmlCode);
+            doc.close();
+
+            
+            // 렌더 완료 후 스타일 적용
+            iframe.onload = () => {
+
+              // ✅ 기본 스타일 적용
+              const style = doc.createElement("style");
+              style.textContent = `
+                
+                  @font-face {
+                    font-family: 'Pretendard-Regular';
+                    src: url('https://fastly.jsdelivr.net/gh/Project-Noonnu/noonfonts_2107@1.1/Pretendard-Regular.woff') format('woff');
+                    font-weight: 400;
+                    font-style: normal;
+                  }
+                  body {
+                    font-family: 'Pretendard-Regular';
+                  }
+                  * {
+                    line-height: ${lineH} !important;
+                  }
+                    .inlinerollresult{
+                    line-height: 2.5 !important;
+                    }
+              `;
+                doc.head.appendChild(style);
+
+
+              if (document.getElementById("colorUnifyCheckbox").checked) {
+                doc.querySelectorAll(".you").forEach(el => {
+                  el.style.backgroundColor = "rgb(241, 241, 241)";
+                });
+                doc.querySelectorAll(".you > .spacer").forEach(el => {
+                  el.style.backgroundColor = "rgb(225, 225, 225)";
+                });
+              }
+
+              if(document.getElementById("tableWidthCheckbox").checked){
+                doc.querySelectorAll("div.message.general table").forEach(table => {
+                  table.style.setProperty("width", "100%", "important");
+                });
+              }
+
+              if (document.getElementById("removeApiCheckbox").checked) {
+                doc.querySelectorAll("span").forEach(span => {
+                 if (span.style.color === "rgb(170, 170, 170)") {
+                    const parentDiv = span.closest("div");
+                    if (parentDiv) parentDiv.remove();
+                  }
+                });
+                let lastSpeaker = null;
+
+                doc.querySelectorAll(".message").forEach(message => {
+                   // 만약 desc면 speaker 흐름을 끊는다 (lastSpeaker 무효화)
+                  if (message.classList.contains("desc")) {
+                    lastSpeaker = null;
+                    return;
+                  }
+
+                  const bySpan = message.querySelector("span.by");
+                  const avatar = message.querySelector("div.avatar");
+                  const currentSpeaker = bySpan ? bySpan.textContent.trim() : null;
+
+                  if (currentSpeaker && currentSpeaker === lastSpeaker) {
+
+
+                    // ✅ 연속 발화자 → spacer 제거
+                    const spacer = message.querySelector(".spacer");
+                    if (spacer) spacer.remove();
+                    if (bySpan) bySpan.remove();
+                     // ✅ 이름(span.by)도 제거
+                    if (avatar) avatar.remove();
+                  }
+
+                  if (currentSpeaker) {
+                    lastSpeaker = currentSpeaker;
+                  } else {
+                    // 화자가 없으면 현재 화자 유지 (desc 같은 경우)
+                    // lastSpeaker 유지
+                  }
+                });
+              }
+
+              if (document.getElementById("ownerInput").value.trim() !== "") {
+                const targets = document.getElementById("ownerInput").value
+                  .split(",")
+                  .map(t => t.trim())
+                  .filter(t => t !== "");
+
+                let deletingSpeaker = null;  // 현재 삭제 중인 스피커
+
+                doc.querySelectorAll(".message").forEach(message => {
+                  const bySpan = message.querySelector("span.by");
+
+                  if (bySpan) {
+                    const speaker = bySpan.textContent.trim();
+
+                    if (targets.some(name => speaker.includes(name))) {
+                      // 대상 스피커라면 삭제 시작
+                      deletingSpeaker = speaker;
+                      message.remove();
+                    } else {
+                      // 대상 스피커 아니면 삭제 중지
+                      deletingSpeaker = null;
+                    }
+                  } else {
+                    // span.by 없으면 연속 발화 메시지 판단
+                    if (deletingSpeaker !== null) {
+                      message.remove();
+                    }
+                  }
+                });
+              }
+
+
+
+              if (document.getElementById("removeHiddenMessageCheckbox").checked) {
+                doc.querySelectorAll("div.hidden-message").forEach(el => el.remove());
+              }
+              
+              const inputText = document.getElementById("systemJournalInput").value.trim();
+              if (inputText) {
+                const messages = Array.from(doc.querySelectorAll("div.message"));
+                let i = 0;
+
+                while (i < messages.length) {
+                  const current = messages[i];
+
+                  const classList = current.classList;
+                  const hasSpacer = current.querySelector(".spacer") !== null;
+
+                  // whisper 또는 private 클래스가 있는 경우 제외
+                  if (classList.contains("whisper") || classList.contains("private")) {
+                    i++;
+                    continue;
+                  }
+
+                  if (hasSpacer && current.textContent.includes(inputText)) {
+                    const toConvert = [];
+                    toConvert.push(current);
+
+                    // 연속된 spacer 없는 메시지들 수집
+                    let j = i + 1;
+                    while (j < messages.length && !messages[j].querySelector(".spacer")) {
+                      toConvert.push(messages[j]);
+                      j++;
+                    }
+
+                    // ✅ 개별 메시지로 desc 생성
+                    toConvert.forEach(orig => {
+                      const msgId = "descmsg-" + Date.now() + Math.floor(Math.random() * 1000);
+                      let text = "";
+
+                      const bySpan = orig.querySelector("span.by");
+                      if (bySpan && bySpan.nextSibling) {
+                        text = bySpan.nextSibling.textContent.trim();
+                      } else {
+                        text = orig.textContent.trim();
+                      }
+
+                      const descDiv = doc.createElement("div");
+                      descDiv.className = "message desc";
+                      descDiv.setAttribute("data-messageid", msgId);
+                      descDiv.setAttribute("style",
+                        "box-sizing: content-box; padding-left: 15px; padding-right: 16px; padding-bottom: 7px; background-color: rgb(241, 241, 241); position: relative; font-style: italic; font-weight: bold; text-align: center;");
+
+                      descDiv.innerHTML = `
+                        <div class="spacer" style="box-sizing: content-box; background-color: rgb(225, 225, 225); height: 2px; margin-bottom: 7px; margin-left: -15px; margin-right: -12px;"></div>
+                        ${text}
+                        <div id="menu-${msgId}" class="flyout" style="box-sizing: content-box; position: absolute; cursor: pointer; height: 24px; width: 2px; right: 10px; top: 0px;"></div>
+                      `;
+
+                      orig.parentNode.insertBefore(descDiv, orig);
+                      orig.remove();
+                    });
+
+                    i = j;
+                  } else {
+                    i++;
+                  }
+                }
+              }
+
+
+              //마우스 올리면 삭제 
+              doc.querySelectorAll('.message').forEach(msg => {
+                const delBtn = doc.createElement('button');
+                delBtn.textContent = '✕';
+                delBtn.style.cssText = `
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      background: rgba(255, 50, 50, 0.8);
+      border: none;
+      color: white;
+      font-weight: bold;
+      padding: 2px 6px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: none;
+      z-index: 9999;
+    `;
+
+                // 부모 .message에 상대 위치 지정
+                msg.style.position = 'relative';
+                msg.appendChild(delBtn);
+
+                msg.addEventListener('mouseover', () => {
+                  delBtn.style.display = 'block';
+                });
+                msg.addEventListener('mouseleave', () => {
+                  delBtn.style.display = 'none';
+                });
+
+                delBtn.addEventListener('click', (e) => {
+                  e.stopPropagation();
+                  // (선택) 이전 요소가 <hr>이면 같이 삭제
+                  const prev = msg.previousElementSibling;
+                  if (prev && prev.tagName === 'HR') {
+                    prev.remove();
+                  }
+                  msg.remove();
+                });
+              });
+           
+           
+              doc.querySelectorAll('.whisper').forEach(whisper => {
+              // 귓속말 배경색
+              whisper.style.backgroundColor = '#ddd';
+              });
+              //귓속말 선색
+              doc.querySelectorAll(".whisper > .spacer").forEach(el => {
+                    el.style.backgroundColor = "#ccc";
+              });
+              //emas 배경색
+              doc.querySelectorAll('.emote').forEach(whisper => {
+              whisper.style.backgroundColor = 'rgb(211 203 182)';
+              });
+              //emas 선색
+              doc.querySelectorAll(".emote > .spacer").forEach(el => {
+                    el.style.backgroundColor = "rgb(174 162 137)";
+              });
+
+              // 더블클릭 수정
+              doc.querySelectorAll('.message').forEach(span => {
+                    span.addEventListener('dblclick', () => {
+                      span.setAttribute('contenteditable', 'true');
+                      span.focus();
+                    });
+                    span.addEventListener('blur', () => {
+                      span.removeAttribute('contenteditable');
+                    });
+                    span.addEventListener('keydown', (e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        span.blur();
+                      }
+                    });
+                  });
+
+        
+
+            }
+          
+          });
+
+        });
+
+ // iframe에서 HTML 문자열 가져오기 함수
+ function getIframeHTML() {
+    const iframe = document.getElementById('preview');
+    const doc = iframe.contentDocument || iframe.contentWindow.document;
+    return doc.documentElement.outerHTML;
+  }
+
+        
+  </script>
+</head>
+
+<body>
+  <div class="container">
+    <div class="sidebar">
+      <h2>껍질 미리-깐 롤20로그</h2>
+      <p style="font-size:10pt;">
+        롤20 로그를 깔끔한 스타일로 변경해주는 플러그인입니다.
+        <br />
+        혼자서 콘솔창에 입력해가면서 쓰다가 딸깍이 필요해서 만들었어요...
+        <br />
+        오류가 발생한다면 @waSANkku로 연락주시길...
+      </p>
+      <div id="editor" style="border: 1px solid #ccc;"><textarea class="codemirror-textarea"></textarea></div>
+
+      <label><input type="checkbox" id="tableWidthCheckbox" checked /> 표 너비 맞추기</label>
+      <label><input type="checkbox" id="colorUnifyCheckbox" checked /> 내가 보낸 채팅 색상 통일</label>
+      <label><input type="checkbox" id="removeApiCheckbox" checked /> 사담 API 일괄제거 </label>
+      <label><input type="checkbox" id="removeHiddenMessageCheckbox" checked /> 숨긴 메세지 일괄제거 </label>
+      <label>
+        시스템 저널 명:
+        <input type="text" id="systemJournalInput" />
+      </label>
+      <label>
+        오너 채팅 일괄 삭제:
+        <input type="text" id="ownerInput" />
+      </label>
+      <label>
+        줄 간격격:
+        <input type="number" id="paddingInput" value="1.5" min="0" />
+      </label>
+      <input type="text" id="filenameInput" placeholder="파일명 입력 (확장자 제외)" />
+      <button id="applyStyleBtn">스타일 적용</button>
+      <button id="copyHTMLBtn">HTML 복사</button>
+      <button id="saveHTMLBtn">HTML 저장</button>
+      <button id="saveTxtBtn">TXT 저장</button>
+    </div>
+
+    <div class="preview-container">
+      <iframe id="preview"></iframe>
+      </div> </div>
+
+  <script>
+   
+  </script>
+</body>
+
+</html>
