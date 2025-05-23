@@ -243,6 +243,8 @@
               }
 
               if (document.getElementById("ownerInput").value.trim() !== "") {
+              
+                
                 const targets = document.getElementById("ownerInput").value
                   .split(",")
                   .map(t => t.trim())
@@ -251,6 +253,13 @@
                 let deletingSpeaker = null;  // 현재 삭제 중인 스피커
 
                 doc.querySelectorAll(".message").forEach(message => {
+                // 메시지 div에 'desc' 클래스가 있으면 삭제 제외
+                if (message.classList.contains("desc")) {
+                  // 삭제 대상 아님, 다음으로 넘어감
+                  deletingSpeaker = null;
+                  return;
+                }
+                  
                   const bySpan = message.querySelector("span.by");
 
                   if (bySpan) {
