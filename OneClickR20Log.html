@@ -112,6 +112,31 @@
         mode: "htmlmixed"
       });
 
+      // 2. 붙여넣기 시 기본 text/plain 삽입 차단 (코어 레벨)
+      CodeMirror.on(editor, "beforeChange", function (instance, changeObj) {
+        if (changeObj.origin === "paste" && changeObj.text && changeObj.text.length > 1) {
+          // 기본 붙여넣기 텍스트 제거
+          changeObj.cancel();
+        }
+      });
+
+      editor.getWrapperElement().addEventListener('paste', function (e) {
+        e.preventDefault(); // 💥 항상 붙여넣기 기본 동작 막기
+
+        // 클립보드에서 HTML 데이터 추출
+        const htmlData = e.clipboardData.getData('text/html');
+
+        // HTML 데이터가 존재하면 기본 붙여넣기 방지하고 직접 삽입
+        if (htmlData) {
+          e.preventDefault();
+          const doc = editor.getDoc();
+          const cursor = doc.getCursor();
+          doc.replaceRange(extractFragment(htmlData), cursor);
+        }
+        // HTML이 없을 경우 기존 기본 동작 유지 (text/plain)
+      });
+
+
 
       // HTML 복사 버튼
       document.getElementById('copyHTMLBtn').addEventListener('click', () => {
@@ -447,18 +472,33 @@
     });
 
     function darkenColor(hex, amount = 15) {
-        const num = parseInt(hex.slice(1), 16);
-        const r = Math.max(0, (num >> 16) - amount);
-        const g = Math.max(0, ((num >> 8) & 0x00FF) - amount);
-        const b = Math.max(0, (num & 0x0000FF) - amount);
-        return `rgb(${r}, ${g}, ${b})`;
-      }
+      const num = parseInt(hex.slice(1), 16);
+      const r = Math.max(0, (num >> 16) - amount);
+      const g = Math.max(0, ((num >> 8) & 0x00FF) - amount);
+      const b = Math.max(0, (num & 0x0000FF) - amount);
+      return `rgb(${r}, ${g}, ${b})`;
+    }
 
     // iframe에서 HTML 문자열 가져오기 함수
     function getIframeHTML() {
       const iframe = document.getElementById('preview');
       const doc = iframe.contentDocument || iframe.contentWindow.document;
       return doc.documentElement.outerHTML;
+    }
+
+    function extractFragment(html) {
+      const START = '<!--StartFragment-->';
+      const END = '<!--EndFragment-->';
+
+      const startIndex = html.indexOf(START);
+      const endIndex = html.indexOf(END);
+
+      if (startIndex === -1 || endIndex === -1) {
+        // 마커가 없으면 전체 리턴 (fallback)
+        return html;
+      }
+
+      return html.substring(startIndex + START.length, endIndex);
     }
 
 
@@ -502,7 +542,7 @@
         <label>
           귓속말 글자색:
           <input type="color" id="whisperColorInput" value="#000000" />
-          </label>
+        </label>
       </div>
       <div>
         <label>
@@ -514,7 +554,7 @@
           <input type="color" id="emoteColorInput" value="#653e10" />
         </label>
       </div>
-      
+
 
       <input type="text" id="filenameInput" placeholder="파일명 입력 (확장자 제외)" />
       <button id="applyStyleBtn">스타일 적용</button>
