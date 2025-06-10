@@ -33,7 +33,7 @@
       border-right: 1px solid #ccc;
       display: flex;
       flex-direction: column;
-      gap: 15px;
+      gap: 10px;
     }
 
     .drop-zone {
@@ -487,29 +487,34 @@
         <input type="text" id="systemJournalInput" />
       </label>
       <label>
-        오너 채팅 일괄 삭제:
+        저널 일괄 삭제:
         <input type="text" id="ownerInput" />
       </label>
       <label>
         줄 간격:
         <input type="number" id="paddingInput" value="1.5" min="0" />
       </label>
-      <label>
-        귓속말 배경색:
-        <input type="color" id="whisperBColorInput" value="#dddddd" />
-      </label>
-      <label>
-        귓속말 글자색:
-        <input type="color" id="whisperColorInput" value="#000000" />
-      </label>
-      <label>
-        emas 배경색:
-        <input type="color" id="emoteBColorInput" value="#d3cbb6" />
-      </label>
-      <label>
-        귓속말 글자색:
-        <input type="color" id="emoteColorInput" value="#653e10" />
-      </label>
+      <div>
+        <label>
+          귓속말 배경색:
+          <input type="color" id="whisperBColorInput" value="#dddddd" />
+        </label>
+        <label>
+          귓속말 글자색:
+          <input type="color" id="whisperColorInput" value="#000000" />
+          </label>
+      </div>
+      <div>
+        <label>
+          emas 배경색:
+          <input type="color" id="emoteBColorInput" value="#d3cbb6" />
+        </label>
+        <label>
+          귓속말 글자색:
+          <input type="color" id="emoteColorInput" value="#653e10" />
+        </label>
+      </div>
+      
 
       <input type="text" id="filenameInput" placeholder="파일명 입력 (확장자 제외)" />
       <button id="applyStyleBtn">스타일 적용</button>
