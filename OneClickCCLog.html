@@ -674,7 +674,8 @@
             let allMessages = [];
 
                 async function loadFirestoreMessages() {
-                    const roomId = document.getElementById('roomInput').value.trim();
+                    const rawInput = document.getElementById('roomInput').value.trim();
+                    const roomId = extractRoomId(rawInput);
                     if (!roomId) return alert('룸 ID를 입력해주세요.');
 
                     const baseUrl = `https://firestore.googleapis.com/v1/projects/ccfolia-160aa/databases/(default)/documents/rooms/${roomId}/messages`;
@@ -831,6 +832,7 @@
                 }
 
      // ✱ 서술자 지정 기능
+        // ✱ 서술자 지정 기능 (텍스트 유지)
 function applyNarratorMode(name) {
   const divs = document.querySelectorAll('.gap');
   divs.forEach(div => {
@@ -851,6 +853,13 @@ function applyNarratorMode(name) {
     }
   });
 }
+
+
+    // ✱ Firestore 메시지 불러오기 시 주소에서 ID 추출
+    function extractRoomId(input) {
+        const match = input.match(/rooms\/([\w-]+)/);
+        return match ? match[1] : input.trim();
+    } 
 
     </script>
 </body>
