@@ -2,260 +2,284 @@
 <html lang="ko">
 
 <head>
-  <meta charset="UTF-8">
-  <title>원클릭 코코로그 스타일</title>
-  <style>
-    * { box-sizing: border-box; }
+    <meta charset="UTF-8">
+    <title>원클릭 코코로그 스타일</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
 
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-    }
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
 
-    .container {
-      display: flex;
-      height: 100vh;
-    }
+        .container {
+            display: flex;
+            height: 100vh;
+        }
 
-    .sidebar {
-      width: 320px;
-      padding: 20px;
-      background-color: #f7f7f7;
-      border-right: 1px solid #ccc;
-      display: flex;
-      flex-direction: column;
-      gap: 15px;
-    }
+        .sidebar {
+            width: 320px;
+            padding: 20px;
+            background-color: #f7f7f7;
+            border-right: 1px solid #ccc;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
 
-    .drop-zone {
-      border: 2px dashed #aaa;
-      border-radius: 10px;
-      padding: 20px;
-      text-align: center;
-      color: #666;
-      background-color: #fff;
-      transition: background-color 0.3s, border-color 0.3s;
-      cursor: pointer;
-    }
+        .drop-zone {
+            border: 2px dashed #aaa;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            color: #666;
+            background-color: #fff;
+            transition: background-color 0.3s, border-color 0.3s;
+            cursor: pointer;
+        }
 
-    .drop-zone.dragover {
-      background-color: #eef6ff;
-      border-color: #3399ff;
-      color: #3399ff;
-    }
+        .drop-zone.dragover {
+            background-color: #eef6ff;
+            border-color: #3399ff;
+            color: #3399ff;
+        }
 
-    .preview {
-      flex: 1;
-      height: 100%;
-      overflow: auto;
-      background-color: #1f1e22;
-      color: white;
-      padding: 10px;
-    }
+        .preview {
+            flex: 1;
+            height: 100%;
+            overflow: auto;
+            background-color: #1f1e22;
+            color: white;
+            padding: 10px;
+        }
 
-    button {
-      padding: 10px;
-      font-size: 14px;
-      cursor: pointer;
-    }
+        button {
+            padding: 10px;
+            font-size: 14px;
+            cursor: pointer;
+        }
 
-    label {
-      font-size: 14px;
-    }
+        label {
+            font-size: 14px;
+        }
 
-    input[type="number"] {
-      width: 60px;
-      padding: 5px;
-      margin-left: 5px;
-    }
+        input[type="number"] {
+            width: 60px;
+            padding: 5px;
+            margin-left: 5px;
+        }
 
-    
-          
 
-    p{
-    margin: 0;
-    }
 
-    b{
-    color: gray;
-        font-size: 9pt;
-        font-weight: 200;
-    }
 
-    span, b {
-        font-size: 16px;
-        font-family: 'Arial', sans-serif;
-        line-height: 1.5;
-    }
+        p {
+            margin: 0;
+        }
 
-    b {
-        font-weight: bold;
-    }
+        b {
+            color: gray;
+            font-size: 9pt;
+            font-weight: 200;
+        }
 
-    .ccfolia_wrap {
-    position: relative;
-    padding: 10px !important;
-    background-color: #2c2c2cde;
-    color: #fefefe;
-    }
-    .msg_container {
-    flex-shrink: 0;
-    width: 40px;
-    height: 40px;
-    overflow: hidden;
-    background: rgba(0, 0, 0, 0.2);
-    border-radius: 5px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    }
+        span,
+        b {
+            font-size: 16px;
+            font-family: 'Arial', sans-serif;
+            line-height: 1.5;
+        }
 
-    .msg_container img {
-    width: 40px;
-    }
+        b {
+            font-weight: bold;
+        }
 
-    span:before {
-    display: none !important ;
-    }
+        .ccfolia_wrap {
+            position: relative;
+            padding: 10px !important;
+            background-color: #2c2c2cde;
+            color: #fefefe;
+        }
 
-            
-    .gap{
-    gap: 15px;
-    display: flex;
-    -webkit-box-pack: start;
-    justify-content: flex-start;
-    align-items: flex-start;
-    position: relative;
-    text-decoration: none;
-    width: 100%;
-    box-sizing: border-box;
-    text-align: left;
-    padding: 16px 16px;
-    }
+        .msg_container {
+            flex-shrink: 0;
+            width: 40px;
+            height: 40px;
+            overflow: hidden;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
 
-            
-  </style>
+        .msg_container img {
+            width: 40px;
+        }
+
+        span:before {
+            display: none !important;
+        }
+
+
+        .gap {
+            gap: 15px;
+            display: flex;
+            -webkit-box-pack: start;
+            justify-content: flex-start;
+            align-items: flex-start;
+            position: relative;
+            text-decoration: none;
+            width: 100%;
+            box-sizing: border-box;
+            text-align: left;
+            padding: 16px 16px;
+        }
+        
+        hr{
+            margin: 0px;
+            padding: 0px;
+            border-width: 1px 0px 0px;
+            flex-shrink: 0;
+            border-top-style: solid;
+            border-top-color: rgba(255, 255, 255, 0.08);
+            display: block;
+        }
+    </style>
 </head>
 
 <body>
-  <div class="container">
-    <div class="sidebar">
-      <h2>껍질 미리-깐 코코로그</h2>
-      <p style="font-size:10pt;">
-        <a href="https://sukenell.github.io/cclog_custom/" target='_blank'>웹</a>에서 변환한 파일을 코코로그 스타일로 변경해주는 플러그인입니다.
-        <br/>
-        혼자서 콘솔창에 입력해가면서 쓰다가 딸깍이 필요해서 만들었어요...
-        <br/>
-        오류가 발생한다면 @waSANkku로 연락주시길... 
-      </p>
-      <input type="file" id="htmlFileInput" accept=".html,.htm" />
-      <div id="dropZone" class="drop-zone">
-        여기로 파일을 드래그하거나<br><strong>클릭하여 선택</strong>하세요.
-      </div>
+    <div class="container">
+        <div class="sidebar">
+            <h2>껍질 미리-깐 코코로그</h2>
+            <p style="font-size:10pt;">
+                <a href="https://sukenell.github.io/cclog_custom/" target='_blank'>웹</a>에서 변환한 파일을 코코로그 스타일로 변경해주는
+                플러그인입니다.
+                <br />
+                혼자서 콘솔창에 입력해가면서 쓰다가 딸깍이 필요해서 만들었어요...
+                <br />
+                오류가 발생한다면 @waSANkku로 연락주시길...
+            </p>
+            <hr />
+            <label>
+                룸 ID:
+                <input type="text" id="roomInput" placeholder="" />
+            </label>
+            
+            <button onclick="loadFirestoreMessages()">룸 메시지 불러오기</button>
+            <div id="channelFilter" style="display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px;"></div>
+            <input type="file" id="htmlFileInput" accept=".html,.htm" />
+            <div id="dropZone" class="drop-zone">
+                여기로 파일을 드래그하거나<br><strong>클릭하여 선택</strong>하세요.
+            </div>
+            <label>
+                서술자 이름:
+                <input type="text" id="narratorInput" placeholder="이름 정확히 입력" /></label>
+            <label><input type="checkbox" id="removeDateCheckbox" checked /> 날짜 제거</label>
 
-      <label><input type="checkbox" id="removeDateCheckbox" checked /> 날짜 제거</label>
+            <label>
+                패딩 (상하 px):
+                <input type="number" id="paddingInput" value="2" min="0" />
+            </label>
+            <input type="text" id="filenameInput" placeholder="파일명 입력 (확장자 제외)" />
 
-      <label>
-        패딩 (상하 px):
-        <input type="number" id="paddingInput" value="2" min="0" />
-      </label>
-      <input type="text" id="filenameInput" placeholder="파일명 입력 (확장자 제외)" />
+            <button id="applyStyleBtn">스타일 적용</button>
+            <button id="saveHTMLBtn">HTML 저장</button>
+            <button id="saveTxtBtn">TXT 저장</button>
+        </div>
 
-      <button id="applyStyleBtn">스타일 적용</button>
-      <button id="saveHTMLBtn">HTML 저장</button>
-      <button id="saveTxtBtn">TXT 저장</button>
+        <div class="preview" id="previewArea"></div>
     </div>
 
-    <div class="preview" id="previewArea"></div>
-  </div>
+    <script>
+        const fileInput = document.getElementById('htmlFileInput');
+        const dropZone = document.getElementById('dropZone');
+        const previewArea = document.getElementById('previewArea');
+        const styleButton = document.getElementById('applyStyleBtn');
+        const removeDateCheckbox = document.getElementById('removeDateCheckbox');
+        const paddingInput = document.getElementById('paddingInput');
+        let loadedHTML = "";
 
-  <script>
-    const fileInput = document.getElementById('htmlFileInput');
-    const dropZone = document.getElementById('dropZone');
-    const previewArea = document.getElementById('previewArea');
-    const styleButton = document.getElementById('applyStyleBtn');
-    const removeDateCheckbox = document.getElementById('removeDateCheckbox');
-    const paddingInput = document.getElementById('paddingInput');
-    let loadedHTML = "";
+        function loadHTMLFile(file) {
+            if (!file || !file.name.match(/\.html?$/)) {
+                alert("HTML 또는 HTM 파일만 업로드할 수 있습니다.");
+                return;
+            }
 
-    function loadHTMLFile(file) {
-      if (!file || !file.name.match(/\.html?$/)) {
-        alert("HTML 또는 HTM 파일만 업로드할 수 있습니다.");
-        return;
-      }
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                loadedHTML = e.target.result;
+                previewArea.innerHTML = loadedHTML;
+                applyStyleToPreviewArea();
+            };
+            reader.readAsText(file);
+        }
 
-      const reader = new FileReader();
-      reader.onload = function (e) {
-        loadedHTML = e.target.result;
-        previewArea.innerHTML = loadedHTML;
-        applyStyleToPreviewArea();
-      };
-      reader.readAsText(file);
-    }
+        // Drag & Drop
+        ['dragenter', 'dragover'].forEach(evt =>
+            dropZone.addEventListener(evt, e => {
+                e.preventDefault();
+                dropZone.classList.add('dragover');
+            })
+        );
 
-    // Drag & Drop
-    ['dragenter', 'dragover'].forEach(evt =>
-      dropZone.addEventListener(evt, e => {
-        e.preventDefault();
-        dropZone.classList.add('dragover');
-      })
-    );
+        ['dragleave', 'drop'].forEach(evt =>
+            dropZone.addEventListener(evt, e => {
+                e.preventDefault();
+                dropZone.classList.remove('dragover');
+            })
+        );
 
-    ['dragleave', 'drop'].forEach(evt =>
-      dropZone.addEventListener(evt, e => {
-        e.preventDefault();
-        dropZone.classList.remove('dragover');
-      })
-    );
-
-    dropZone.addEventListener('drop', e => {
-      const file = e.dataTransfer.files[0];
-      loadHTMLFile(file);
-    });
-
-    dropZone.addEventListener('click', () => {
-      fileInput.click();
-    });
-
-    fileInput.addEventListener('change', e => {
-      loadHTMLFile(e.target.files[0]);
-    });
-
-    styleButton.addEventListener('click', () => {
-      applyStyleToPreviewArea();
-    });
-
-    function applyStyleToPreviewArea() {
-      const removeDate = removeDateCheckbox.checked;
-      const paddingValue = paddingInput.value || "2";
-      const doc = previewArea;
-
-      // 배경색
-      doc.querySelectorAll('.ccfolia_wrap').forEach(el => {
-        el.style.backgroundColor = '#1f1e22';
-      });
-
-      // 날짜 제거
-      if (removeDate) {
-        doc.querySelectorAll('.gap b').forEach(el => {
-          if (/^\s*-\s*\d{4}\/\d{2}\/\d{2}\s*$/.test(el.textContent)) {
-            el.remove();
-          }
+        dropZone.addEventListener('drop', e => {
+            const file = e.dataTransfer.files[0];
+            loadHTMLFile(file);
         });
-      }
 
-      // SYSTEM 형식 변환
-      doc.querySelectorAll('.gap').forEach(old => {
-        const systemSpan = old.querySelector('span[style*="font-weight: bold"]');
-        if (!systemSpan || systemSpan.innerText.trim().toLowerCase() !== 'system') return;
+        dropZone.addEventListener('click', () => {
+            fileInput.click();
+        });
 
-        const p = old.querySelector('p');
-        const spans = p.querySelectorAll('span');
-        const message = spans[spans.length - 1]?.innerText.trim();
+        fileInput.addEventListener('change', e => {
+            loadHTMLFile(e.target.files[0]);
+        });
 
-        const newDiv = document.createElement('div');
-        newDiv.className = 'player system';
-        newDiv.style.cssText = `
+        styleButton.addEventListener('click', () => {
+            applyStyleToPreviewArea();
+        });
+
+        function applyStyleToPreviewArea() {
+            const removeDate = removeDateCheckbox.checked;
+            const paddingValue = paddingInput.value || "2";
+            const doc = previewArea;
+            const narratorName = document.getElementById('narratorInput')?.value?.trim();
+
+            // 배경색
+            doc.querySelectorAll('.ccfolia_wrap').forEach(el => {
+                el.style.backgroundColor = '#1f1e22';
+            });
+
+            // 날짜 제거
+            if (removeDate) {
+                doc.querySelectorAll('.gap b').forEach(el => {
+                    if (/^\s*-\s*\d{4}\/\d{2}\/\d{2}\s*$/.test(el.textContent)) {
+                        el.remove();
+                    }
+                });
+            }
+
+            // SYSTEM 형식 변환
+            doc.querySelectorAll('.gap').forEach(old => {
+                const systemSpan = old.querySelector('span[style*="font-weight: bold"]');
+                if (!systemSpan || systemSpan.innerText.trim().toLowerCase() !== 'system') return;
+
+                const p = old.querySelector('p');
+                const spans = p.querySelectorAll('span');
+                const message = spans[spans.length - 1]?.innerText.trim();
+
+                const newDiv = document.createElement('div');
+                newDiv.className = 'player system';
+                newDiv.style.cssText = `
           display: flex;
           overflow: hidden;
           padding: 0px;
@@ -265,7 +289,7 @@
           justify-content: center;
         `;
 
-        newDiv.innerHTML = `
+                newDiv.innerHTML = `
           <div class="infoWrap" style="display: none">
             <div class="imgWrap" style="width: 40px;height: 40px;overflow: hidden;background-color: rgba(0, 0, 0, 0.31);float: left;border-radius: 5px"></div>
           </div>
@@ -274,54 +298,56 @@
             <p class="Utext" style="margin: 0;font-weight: 400;color: #908e9a;font-size: 15px;letter-spacing: -1px">${message}</p>
           </div>
         `;
-        old.replaceWith(newDiv);
-      });
+                old.replaceWith(newDiv);
+            });
 
-      // 패딩 적용
-      doc.querySelectorAll('.gap').forEach(el => {
-        if (!el.querySelector('.msg_container')) {
-          el.style.padding = `${paddingValue}px 16px`;
-        }
-      });
+            // 패딩 적용
+            doc.querySelectorAll('.gap').forEach(el => {
+                if (!el.querySelector('.msg_container')) {
+                    el.style.padding = `${paddingValue}px 16px`;
+                }
+            });
 
-      // hr 보이기
-      doc.querySelectorAll('hr').forEach(el => {
-        el.style.display = 'block';
-      });
+            // hr 보이기
+            doc.querySelectorAll('hr').forEach(el => {
+                el.style.display = 'block';
+            });
 
-      // 더블클릭 편집
-      doc.querySelectorAll('.gap span').forEach(span => {
-        span.addEventListener('click', () => {
-          span.setAttribute('contenteditable', 'true');
-          span.focus();
-        });
-        span.addEventListener('blur', () => {
-          span.removeAttribute('contenteditable');
-        });
-        span.addEventListener('keydown', (e) => {
-          if (e.key === 'Enter') {
-            e.preventDefault();
-            span.blur();
-          }
-        });
-      });
+            // 더블클릭 편집
+            doc.querySelectorAll('.gap span').forEach(span => {
+                span.addEventListener('click', () => {
+                    span.setAttribute('contenteditable', 'true');
+                    span.focus();
+                });
+                span.addEventListener('blur', () => {
+                    span.removeAttribute('contenteditable');
+                });
+                span.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        span.blur();
+                    }
+                });
+            });
 
-      document.querySelectorAll('hr').forEach(hr => {
-        const style = hr.style;
-        style.borderRightStyle = '';
-        style.borderBottomStyle = '';
-        style.borderLeftStyle = '';
-        style.borderRightColor = '';
-        style.borderBottomColor = '';
-        style.borderLeftColor = '';
-        style.borderImage = '';
-    });
+            if (narratorName) applyNarratorMode(narratorName);
 
-      // 삭제 버튼
-      doc.querySelectorAll('.gap').forEach(gap => {
-        const delBtn = document.createElement('button');
-        delBtn.textContent = '✕';
-        delBtn.style.cssText = `
+            document.querySelectorAll('hr').forEach(hr => {
+                const style = hr.style;
+                style.borderRightStyle = '';
+                style.borderBottomStyle = '';
+                style.borderLeftStyle = '';
+                style.borderRightColor = '';
+                style.borderBottomColor = '';
+                style.borderLeftColor = '';
+                style.borderImage = '';
+            });
+
+            // 삭제 버튼
+            doc.querySelectorAll('.gap').forEach(gap => {
+                const delBtn = document.createElement('button');
+                delBtn.textContent = '✕';
+                delBtn.style.cssText = `
           position: absolute;
           top: 5px;
           right: 5px;
@@ -336,40 +362,40 @@
           z-index: 9999;
         `;
 
-        gap.style.position = 'relative';
-        gap.appendChild(delBtn);
+                gap.style.position = 'relative';
+                gap.appendChild(delBtn);
 
-        gap.addEventListener('mouseover', () => {
-          delBtn.style.display = 'block';
-        });
-        gap.addEventListener('mouseleave', () => {
-          delBtn.style.display = 'none';
-        });
+                gap.addEventListener('mouseover', () => {
+                    delBtn.style.display = 'block';
+                });
+                gap.addEventListener('mouseleave', () => {
+                    delBtn.style.display = 'none';
+                });
 
-        delBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          const hr = gap.previousElementSibling;
-          if (hr && hr.tagName === 'HR') {
-            hr.remove();
-          }
-          gap.remove();
-        });
-      });
-    }
+                delBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const hr = gap.previousElementSibling;
+                    if (hr && hr.tagName === 'HR') {
+                        hr.remove();
+                    }
+                    gap.remove();
+                });
+            });
+        }
 
-    const saveButton = document.getElementById('saveHTMLBtn');
-    saveButton.addEventListener('click', () => {
-      const wrap = previewArea.querySelector('.ccfolia_wrap');
-      if (!wrap) {
-        alert('.ccfolia_wrap 요소를 찾을 수 없습니다.');
-        return;
-      }
+        const saveButton = document.getElementById('saveHTMLBtn');
+        saveButton.addEventListener('click', () => {
+            const wrap = previewArea.querySelector('.ccfolia_wrap');
+            if (!wrap) {
+                alert('.ccfolia_wrap 요소를 찾을 수 없습니다.');
+                return;
+            }
 
-     
-  const doctype = '<!DOCTYPE html>';
-  const htmlOpen = '<html lang="en">';
-  const htmlClose = '</html>';
-  const head = `
+
+            const doctype = '<!DOCTYPE html>';
+            const htmlOpen = '<html lang="en">';
+            const htmlClose = '</html>';
+            const head = `
     <head>
       <meta charset="UTF-8">
       <title>ccfolia-wrap Export</title>
@@ -441,120 +467,392 @@
     </head>
   `;
 
-  const body = `<body>${wrap.outerHTML}</body>`;
+            const body = `<body>${wrap.outerHTML}</body>`;
 
-  const fullHtml = `${doctype}\n${htmlOpen}\n${head}\n${body}\n${htmlClose}`;
+            const fullHtml = `${doctype}\n${htmlOpen}\n${head}\n${body}\n${htmlClose}`;
 
-  const blob = new Blob([fullHtml], { type: 'text/html' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  const filename = document.getElementById('filenameInput').value.trim() || 'ccfolia-wrap';
+            const blob = new Blob([fullHtml], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            const filename = document.getElementById('filenameInput').value.trim() || 'ccfolia-wrap';
 
-  a.download = filename+'.html';
-  a.click();
-  URL.revokeObjectURL(url);
-    });
+            a.download = filename + '.html';
+            a.click();
+            URL.revokeObjectURL(url);
+        });
 
 
-    // 텍스트 저장
-const saveTxtBtn = document.getElementById('saveTxtBtn');
-saveTxtBtn.addEventListener('click', () => {
-  const wrap = previewArea.querySelector('.ccfolia_wrap');
-  if (!wrap) {
-    alert('.ccfolia_wrap 요소를 찾을 수 없습니다.');
-    return;
-  }
+        // 텍스트 저장
+        const saveTxtBtn = document.getElementById('saveTxtBtn');
+        saveTxtBtn.addEventListener('click', () => {
+            const wrap = previewArea.querySelector('.ccfolia_wrap');
+            if (!wrap) {
+                alert('.ccfolia_wrap 요소를 찾을 수 없습니다.');
+                return;
+            }
+
+            const doctype = '<!DOCTYPE html>';
+            const htmlOpen = '<html lang="en">';
+            const htmlClose = '</html>';
+            const head = `
+    <head>
+      <meta charset="UTF-8">
+      <title>ccfolia-wrap Export</title>
+      <style>
+     
+    p{
+    margin: 0;
+    }
+
+    b{
+    color: gray;
+        font-size: 9pt;
+        font-weight: 200;
+    }
+
+    span, b {
+        font-size: 16px;
+        font-family: 'Arial', sans-serif;
+        line-height: 1.5;
+    }
+
+    b {
+        font-weight: bold;
+    }
+
+    .ccfolia_wrap {
+    position: relative;
+    padding: 10px !important;
+    background-color: #2c2c2cde;
+    color: #fefefe;
+    }
+    .msg_container {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    overflow: hidden;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    }
+
+    .msg_container img {
+    width: 40px;
+    }
+
+    span:before {
+    display: none !important ;
+    }
+
+            
+    .gap{
+    gap: 15px;
+    display: flex;
+    -webkit-box-pack: start;
+    justify-content: flex-start;
+    align-items: flex-start;
+    position: relative;
+    text-decoration: none;
+    width: 100%;
+    box-sizing: border-box;
+    text-align: left;
+    padding: 16px 16px;
+    }
+
+        
+      </style>
+    </head>
+  `;
+
+            const body = `<body>${wrap.outerHTML}</body>`;
+
+            const fullHtml = `${doctype}\n${htmlOpen}\n${head}\n${body}\n${htmlClose}`;
+            const blob = new Blob([fullHtml], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+
+            const filename = document.getElementById('filenameInput').value.trim() || 'ccfolia-wrap';
+
+            a.download = filename + '.txt';
+            a.click();
+            URL.revokeObjectURL(url);
+        });
     
-  const doctype = '<!DOCTYPE html>';
-  const htmlOpen = '<html lang="en">';
-  const htmlClose = '</html>';
-  const head = `
-    <head>
-      <meta charset="UTF-8">
-      <title>ccfolia-wrap Export</title>
-      <style>
-     
-    p{
-    margin: 0;
+    
+
+            async function loadFirestoreMessages() {
+                const roomId = document.getElementById('roomInput').value.trim();
+                if (!roomId) return alert('룸 ID를 입력해주세요.');
+
+                const url = `https://firestore.googleapis.com/v1/projects/ccfolia-160aa/databases/(default)/documents/rooms/${roomId}/messages/?pageSize=1000`;
+
+                try {
+                    const res = await fetch(url);
+                    const json = await res.json();
+                    if (!json.documents) {
+                        previewArea.innerHTML = '<p style="color:red;">메시지를 불러올 수 없습니다.</p>';
+                        return;
+                    }
+
+                    allMessages = json.documents.map(doc => {
+                        const f = doc.fields;
+                        return {
+                            name: f.name?.stringValue ?? "이름 없음",
+                            text: f.text?.stringValue ?? "",
+                            icon: f.iconUrl?.stringValue ?? "",
+                            color: f.color?.stringValue ?? "#ccc",
+                            channel: f.channelName?.stringValue ?? "기타"
+                        };
+                    });
+
+                    renderChannelFilter();
+                    renderMessages(); // 전체 표시
+                } catch (e) {
+                    console.error(e);
+                    previewArea.innerHTML = `<p style="color:red;">에러: ${e.message}</p>`;
+                }
+            }
+
+            function renderChannelFilter() {
+                const channelSet = new Set(allMessages.map(m => m.channel));
+                const html = ['<button onclick="renderMessages(null)">전체</button>']
+                    .concat([...channelSet].map(ch =>
+                        `<button onclick="renderMessages('${ch}')">${ch}</button>`))
+                    .join('');
+                document.getElementById('channelFilter').innerHTML = html;
+            }
+
+            function renderMessages(filterChannel = null) {
+                const target = document.createElement('div');
+                target.className = 'ccfolia_wrap';
+
+                const filtered = filterChannel
+                    ? allMessages.filter(m => m.channel === filterChannel)
+                    : allMessages;
+
+                filtered.forEach(m => {
+                    const gap = document.createElement('div');
+                    gap.className = 'gap';
+
+                    const iconHTML = m.icon
+                        ? `<div class="msg_container"><img src="${m.icon}" alt="icon"></div>`
+                        : '';
+
+                    const messageHTML = `
+      ${iconHTML}
+      <div>
+        <span style="color:${m.color}; font-weight:bold;">${m.name}</span><br/>
+        <span>${m.text}</span>
+      </div>
+    `;
+                    gap.innerHTML = messageHTML;
+
+                    const hr = document.createElement('hr');
+                     // 명시적 스타일 지정
+                    hr.style.margin = '0px';
+                    hr.style.padding = '0px';
+                    hr.style.borderWidth = '1px 0px 0px';
+                    hr.style.flexShrink = '0';
+                    hr.style.borderTopStyle = 'solid';
+                    hr.style.borderTopColor = 'rgba(255, 255, 255, 0.08)';
+                    hr.style.display = 'block';
+                    target.appendChild(hr);
+                    target.appendChild(gap);
+                });
+
+                previewArea.innerHTML = '';
+                previewArea.appendChild(target);
+                applyStyleToPreviewArea();
+                
+            }
+
+
+            let allMessages = [];
+
+                async function loadFirestoreMessages() {
+                    const roomId = document.getElementById('roomInput').value.trim();
+                    if (!roomId) return alert('룸 ID를 입력해주세요.');
+
+                    const baseUrl = `https://firestore.googleapis.com/v1/projects/ccfolia-160aa/databases/(default)/documents/rooms/${roomId}/messages`;
+
+                    let allDocs = [];
+                    let pageToken = null;
+                    let page = 1;
+
+                    try {
+                        while (true) {
+                            const url = new URL(baseUrl);
+                            url.searchParams.set('pageSize', '1000');
+                            if (pageToken) {
+                                url.searchParams.set('pageToken', pageToken);
+                            }
+
+                            const res = await fetch(url.toString());
+                            const json = await res.json();
+
+                            if (json.documents) {
+                                allDocs = allDocs.concat(json.documents);
+                            }
+
+                            if (!json.nextPageToken) break;
+                            pageToken = json.nextPageToken;
+                            if (page++ > 50) break; // 무한 루프 방지
+                        }
+
+                        if (allDocs.length === 0) {
+                            previewArea.innerHTML = '<p style="color:red;">메시지를 불러올 수 없습니다.</p>';
+                            return;
+                        }
+
+                        const sorted = allDocs.sort((a, b) => {
+                            const aTime = a.fields.createdAt?.timestampValue || '';
+                            const bTime = b.fields.createdAt?.timestampValue || '';
+                            return new Date(aTime) - new Date(bTime); // 오래된 → 최신
+                        });
+
+                        allMessages = sorted.map(doc => {
+                            const f = doc.fields;
+                            return {
+                                name: f.name?.stringValue ?? "이름 없음",
+                                text: f.text?.stringValue ?? "",
+                                icon: f.iconUrl?.stringValue ?? "",
+                                color: f.color?.stringValue ?? "#ccc",
+                                channel: f.channelName?.stringValue ?? "기타"
+                            };
+                        });
+
+                        renderChannelFilter();
+                        renderMessages();
+
+                    } catch (e) {
+                        console.error(e);
+                        previewArea.innerHTML = `<p style="color:red;">에러 발생: ${e.message}</p>`;
+                    }
+                }
+
+                function renderChannelFilter() {
+                    const channelSet = new Set(allMessages.map(m => m.channel));
+                    const html = ['<button onclick="renderMessages(null)">전체</button>']
+                        .concat([...channelSet].map(ch => `<button onclick="renderMessages('${ch}')">${ch}</button>`))
+                        .join('');
+                    document.getElementById('channelFilter').innerHTML = html;
+                }
+
+                function renderMessages(filterChannel = null) {
+                    const target = document.createElement('div');
+                    target.className = 'ccfolia_wrap';
+
+                    const filtered = filterChannel
+                        ? allMessages.filter(m => m.channel === filterChannel)
+                        : allMessages;
+
+                    filtered.forEach(m => {
+                        const gap = document.createElement('div');
+                        gap.className = 'gap';
+                        gap.style.cssText = 'display: flex; background-color: transparent; position: relative;';
+
+                        const msgContainer = document.createElement('div');
+                        msgContainer.className = 'msg_container';
+
+                        const img = document.createElement('img');
+                        img.src = m.icon;
+                        img.alt = m.name;
+                        if(m.icon){
+                            img.style.cssText = 'width: 40px; height: 40px; object-fit: cover; object-position: top center; border-radius: 5px;';
+
+                        } else {
+                            img.style.cssText = 'width: 0px; height: 40px; object-fit: cover; object-position: top center; border-radius: 5px;';
+
+                        }
+                        msgContainer.appendChild(img);
+                        gap.appendChild(msgContainer);
+
+                        const p = document.createElement('p');
+                        p.style.color = 'rgb(221, 221, 221)';
+
+                        const spanEmpty = document.createElement('span');
+                        const spanName = document.createElement('span');
+                        spanName.textContent = m.name;
+                        spanName.style.color = m.color;
+                        spanName.style.fontWeight = 'bold';
+
+                        const spanBr = document.createElement('span');
+                        spanBr.innerHTML = '<br>';
+
+                        const spanText = document.createElement('span');
+                        spanText.textContent = m.text;
+
+                        p.appendChild(spanEmpty);
+                        p.appendChild(spanName);
+                        p.appendChild(spanBr);
+                        p.appendChild(spanText);
+                        gap.appendChild(p);
+
+                        const delBtn = document.createElement('button');
+                        delBtn.textContent = '✕';
+                        delBtn.style.cssText = `
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      background: rgba(255, 50, 50, 0.8);
+      border: none;
+      color: white;
+      font-weight: bold;
+      padding: 2px 6px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: none;
+      z-index: 9999;
+    `;
+                        delBtn.addEventListener('click', e => {
+                            e.stopPropagation();
+                            const hr = gap.previousElementSibling;
+                            if (hr && hr.tagName === 'HR') hr.remove();
+                            gap.remove();
+                        });
+
+                        gap.addEventListener('mouseover', () => delBtn.style.display = 'block');
+                        gap.addEventListener('mouseleave', () => delBtn.style.display = 'none');
+
+                        gap.appendChild(delBtn);
+
+                        const hr = document.createElement('hr');
+                        target.appendChild(hr);
+                        target.appendChild(gap);
+                    });
+
+                    previewArea.innerHTML = '';
+                    previewArea.appendChild(target);
+                    applyStyleToPreviewArea();
+                }
+
+     // ✱ 서술자 지정 기능
+function applyNarratorMode(name) {
+  const divs = document.querySelectorAll('.gap');
+  divs.forEach(div => {
+    const nameSpan = div.querySelector('p span:nth-child(2)');
+    const textSpan = div.querySelector('p span:last-child');
+    if (nameSpan && nameSpan.textContent.trim() === name) {
+      const originalText = textSpan ? textSpan.innerHTML : "";
+
+      div.innerHTML = `
+        <p style="color: rgb(221, 221, 221); display: flow-root; font-style: italic; font-weight: bold; text-align: center; margin: 8px;">
+          <span></span> <span style="color: rgb(136, 136, 136);"></span><span></span><span>${originalText}</span>
+        </p>
+        <button style="position: absolute; top: 5px; right: 5px; background: rgba(255, 50, 50, 0.8); border: none; color: white; font-weight: bold; padding: 2px 6px; border-radius: 50%; cursor: pointer; display: none; z-index: 9999;">✕</button>
+      `;
+      div.style.display = 'flow-root';
+      div.style.backgroundColor = 'transparent';
+      div.style.padding = '2px 16px';
     }
+  });
+}
 
-    b{
-    color: gray;
-        font-size: 9pt;
-        font-weight: 200;
-    }
-
-    span, b {
-        font-size: 16px;
-        font-family: 'Arial', sans-serif;
-        line-height: 1.5;
-    }
-
-    b {
-        font-weight: bold;
-    }
-
-    .ccfolia_wrap {
-    position: relative;
-    padding: 10px !important;
-    background-color: #2c2c2cde;
-    color: #fefefe;
-    }
-    .msg_container {
-    flex-shrink: 0;
-    width: 40px;
-    height: 40px;
-    overflow: hidden;
-    background: rgba(0, 0, 0, 0.2);
-    border-radius: 5px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    }
-
-    .msg_container img {
-    width: 40px;
-    }
-
-    span:before {
-    display: none !important ;
-    }
-
-            
-    .gap{
-    gap: 15px;
-    display: flex;
-    -webkit-box-pack: start;
-    justify-content: flex-start;
-    align-items: flex-start;
-    position: relative;
-    text-decoration: none;
-    width: 100%;
-    box-sizing: border-box;
-    text-align: left;
-    padding: 16px 16px;
-    }
-
-        
-      </style>
-    </head>
-  `;
-
-  const body = `<body>${wrap.outerHTML}</body>`;
-
-  const fullHtml = `${doctype}\n${htmlOpen}\n${head}\n${body}\n${htmlClose}`;
-  const blob = new Blob([fullHtml], { type: 'text/plain' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-
-  const filename = document.getElementById('filenameInput').value.trim() || 'ccfolia-wrap';
-
-  a.download = filename+'.txt';
-  a.click();
-  URL.revokeObjectURL(url);
-});
-  </script>
+    </script>
 </body>
+
 </html>
