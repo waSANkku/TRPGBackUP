@@ -385,6 +385,7 @@
 
         const saveButton = document.getElementById('saveHTMLBtn');
         saveButton.addEventListener('click', () => {
+            removeDeleteButtonsBeforeExport();
             const wrap = previewArea.querySelector('.ccfolia_wrap');
             if (!wrap) {
                 alert('.ccfolia_wrap 요소를 찾을 수 없습니다.');
@@ -489,12 +490,15 @@
             a.download = filename + '.html';
             a.click();
             URL.revokeObjectURL(url);
+
+            restoreDeleteButtonsAfterExport(); 
         });
 
 
         // 텍스트 저장
         const saveTxtBtn = document.getElementById('saveTxtBtn');
         saveTxtBtn.addEventListener('click', () => {
+            removeDeleteButtonsBeforeExport();
             const wrap = previewArea.querySelector('.ccfolia_wrap');
             if (!wrap) {
                 alert('.ccfolia_wrap 요소를 찾을 수 없습니다.');
@@ -598,6 +602,7 @@
             a.download = filename + '.txt';
             a.click();
             URL.revokeObjectURL(url);
+            restoreDeleteButtonsAfterExport(); 
         });
     
     
@@ -888,7 +893,48 @@ function applyNarratorMode(name) {
         const match = input.match(/rooms\/([\w-]+)/);
         return match ? match[1] : input.trim();
     } 
+    //저장시 삭제 버튼 제거
+    function removeDeleteButtonsBeforeExport() {
+            previewArea.querySelectorAll('.gap button').forEach(btn => {
+                if (btn.textContent === '✕') {
+                    btn.remove();
+                }
+            });
+        }
+    // 2. 삭제 버튼 다시 생성
+    function restoreDeleteButtonsAfterExport() {
+        document.querySelectorAll('.gap').forEach(gap => {
+            const delBtn = document.createElement('button');
+            delBtn.textContent = '✕';
+            delBtn.style.cssText = `
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      background: rgba(255, 50, 50, 0.8);
+      border: none;
+      color: white;
+      font-weight: bold;
+      padding: 2px 6px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: none;
+      z-index: 9999;
+    `;
 
+            delBtn.addEventListener('click', e => {
+                e.stopPropagation();
+                const hr = gap.previousElementSibling;
+                if (hr && hr.tagName === 'HR') hr.remove();
+                gap.remove();
+            });
+
+            gap.addEventListener('mouseover', () => delBtn.style.display = 'block');
+            gap.addEventListener('mouseleave', () => delBtn.style.display = 'none');
+
+            gap.appendChild(delBtn);
+            gap.style.position = 'relative';
+        });
+    }
     </script>
 </body>
 
