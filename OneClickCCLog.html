@@ -717,9 +717,19 @@
 
                         allMessages = sorted.map(doc => {
                             const f = doc.fields;
+
+                            // 주사위 결과 추출 시도
+                            let rollResult = "";
+                            try {
+                                rollResult = f.extend?.mapValue?.fields?.roll?.mapValue?.fields?.result?.stringValue || "";
+                            } catch (e) {
+                                rollResult = "";
+                            }
+
+
                             return {
                                 name: f.name?.stringValue ?? "이름 없음",
-                                text: f.text?.stringValue ?? "",
+                                text: f.text?.stringValue + (rollResult ? ` > ${rollResult}` : "") ?? "",
                                 icon: f.iconUrl?.stringValue ?? "",
                                 color: f.color?.stringValue ?? "#ccc",
                                 channel: f.channelName?.stringValue ?? "기타"
