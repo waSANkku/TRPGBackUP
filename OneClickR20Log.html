@@ -771,27 +771,10 @@
       editor.setValue(html);
 
       console.log(`현재 분할 구간(${currentSplitKey}) 내용 저장됨`);
+      updateSplitListUI();
     }
     let splitCount = 0; // 전역 변수로 선언
 
-    function addSplitList(parts) {
-      const splitList = document.getElementById('splitList');
-      splitList.innerHTML = '';
-      splitHtmls = parts;
-
-      parts.forEach((part, i) => {
-        const li = document.createElement('li');
-        li.textContent = `(${i + 1})`; // 이름 붙이기
-        li.style.userSelect = 'none';
-
-        li.addEventListener('click', () => {
-          currentSplitIndex = i;  // ✅ 선택 인덱스 저장
-          loadHTMLtoIframe(part.html);
-        });
-
-        splitList.appendChild(li);
-      });
-    }
     function wrapHTML(innerHTML) {
       return `<!DOCTYPE html>
     <html>
