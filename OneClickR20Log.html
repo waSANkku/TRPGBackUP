@@ -87,6 +87,19 @@
     .CodeMirror {
       height: 100px !important;
     }
+
+    #splitList li {
+      padding: 6px 8px;
+      border-bottom: 1px solid #ddd;
+      cursor: pointer;
+    }
+    #splitList li:hover {
+      background-color: #e0e7ff;
+    }
+    .title{
+      font-size: 15pt;
+      font-weight: bold;
+    }
   </style>
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
   <!-- ✅ CodeMirror 5 CSS & JS CDN -->
@@ -152,6 +165,11 @@
       document.getElementById('saveHTMLBtn').addEventListener('click', () => {
         const filename = document.getElementById('filenameInput').value.trim() || 'roll20-wrap';
 
+        if (splitHtmls.length > 0 && currentSplitIndex !== null) {
+          content = wrapHTML(splitHtmls[currentSplitIndex].html);
+        } else {
+          content = getIframeHTML();
+        }
         const html = getIframeHTML();
         const blob = new Blob([html], { type: 'text/html' });
         const a = document.createElement('a');
@@ -165,6 +183,13 @@
       document.getElementById('saveTxtBtn').addEventListener('click', () => {
         const filename = document.getElementById('filenameInput').value.trim() || 'roll20-wrap';
 
+        if (splitHtmls.length > 0 && currentSplitIndex !== null) {
+          // 분할된 항목 중 현재 선택된 것만
+          content = stripHTML(splitHtmls[currentSplitIndex].html);
+        } else {
+          // 전체 iframe 내용
+          content = stripHTML(getIframeHTML());
+        }
         const html = getIframeHTML();
         const blob = new Blob([html], { type: 'text/plain' });
         const a = document.createElement('a');
@@ -185,7 +210,16 @@
         doc.write(htmlCode);
         doc.close();
 
+        // 메시지만 추출해서 전체 분할 데이터 초기화
+          const messages = Array.from(doc.querySelectorAll('.message'));
+          const totalCount = messages.length;
+          const fullHtml = messages.map(m => m.outerHTML).join('\n');
 
+          splitHtmls = {};
+          currentSplitKey = `1-${totalCount}`;
+          splitHtmls[currentSplitKey] = fullHtml;
+
+          updateSplitListUI();
         // 렌더 완료 후 스타일 적용
         iframe.onload = () => {
 
@@ -382,29 +416,60 @@
             const delBtn = doc.createElement('button');
             delBtn.textContent = '✕';
             delBtn.style.cssText = `
-      position: absolute;
-      top: 5px;
-      right: 5px;
-      background: rgba(255, 50, 50, 0.8);
-      border: none;
-      color: white;
-      font-weight: bold;
-      padding: 2px 6px;
-      border-radius: 50%;
-      cursor: pointer;
-      display: none;
-      z-index: 9999;
-    `;
+              position: absolute;
+              top: 5px;
+              right: 5px;
+              background: rgba(255, 50, 50, 0.8);
+              border: none;
+              color: white;
+              font-weight: bold;
+              padding: 2px 6px;
+              border-radius: 50%;
+              cursor: pointer;
+              display: none;
+              z-index: 9999;
+            `;
+
+            // 분할 버튼 생성
+            const splitBtn = doc.createElement('button');
+            splitBtn.textContent = '분할';
+            splitBtn.className = 'split-btn';
+            splitBtn.style.cssText = `
+              position: absolute;
+              top: 5px;
+              right: 40px;
+              background: rgba(50, 100, 255, 0.8);
+              border: none;
+              color: white;
+              font-weight: bold;
+              padding: 2px 6px;
+              border-radius: 4px;
+              cursor: pointer;
+              display: none;
+              z-index: 9999;
+            `;
+
 
             // 부모 .message에 상대 위치 지정
             msg.style.position = 'relative';
             msg.appendChild(delBtn);
 
+            msg.appendChild(splitBtn);
+
             msg.addEventListener('mouseover', () => {
               delBtn.style.display = 'block';
+              splitBtn.style.display = 'block';
             });
             msg.addEventListener('mouseleave', () => {
               delBtn.style.display = 'none';
+              splitBtn.style.display = 'none';
+            });
+
+                
+
+            splitBtn.addEventListener('click', e => {
+              e.stopPropagation();
+              splitAtMessageIndex(doc, msg);
             });
 
             delBtn.addEventListener('click', (e) => {
@@ -415,6 +480,8 @@
                 prev.remove();
               }
               msg.remove();
+              // 삭제 후 현재 분할 구간 내용 저장 갱신
+             saveCurrentSplitList();
             });
           });
 
@@ -454,16 +521,51 @@
             });
             span.addEventListener('blur', () => {
               span.removeAttribute('contenteditable');
+              saveCurrentSplitList();
+
             });
-            span.addEventListener('keydown', (e) => {
-              if (e.key === 'Enter') {
+             span.addEventListener('keydown', (e) => {
+             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
-                span.blur();
+                span.blur(); // 수정 종료
+              }
+            });
+            // ✅ 붙여넣기 이미지 처리(0628)
+            span.addEventListener('paste', (e) => {
+              const items = e.clipboardData.items;
+
+              for (let i = 0; i < items.length; i++) {
+                const item = items[i];
+
+                if (item.type.indexOf('image') !== -1) {
+                  e.preventDefault(); // base64 삽입 방지
+
+                  const file = item.getAsFile();
+                  const reader = new FileReader();
+
+                  reader.onload = (event) => {
+                    // canvas로 WebP로 압축
+                    const img = new Image();
+                    img.onload = () => {
+                      const canvas = document.createElement('canvas');
+                      canvas.width = img.width;
+                      canvas.height = img.height;
+                      const ctx = canvas.getContext('2d');
+                      ctx.drawImage(img, 0, 0);
+                      const webpDataUrl = canvas.toDataURL('image/webp', 0.5); // 품질 조정 가능
+                      const imageEl = document.createElement('img');
+                      imageEl.src = webpDataUrl;
+                      span.appendChild(imageEl);
+                    };
+                    img.src = event.target.result;
+                  };
+
+                  reader.readAsDataURL(file); // 최초는 base64지만 압축해서 재삽입
+                  break; // 하나만 처리
+                }
               }
             });
           });
-
-
 
         }
 
@@ -483,7 +585,19 @@
     function getIframeHTML() {
       const iframe = document.getElementById('preview');
       const doc = iframe.contentDocument || iframe.contentWindow.document;
-      return doc.documentElement.outerHTML;
+
+    // ✅ 원본 훼손 방지: documentElement 복제
+    const clone = doc.documentElement.cloneNode(true);
+
+    // ✅ 분할 버튼 제거
+    clone.querySelectorAll('button.split-btn').forEach(btn => btn.remove());
+
+    // ✅ 삭제 버튼(✕) 제거
+    clone.querySelectorAll('button').forEach(btn => {
+      if (btn.textContent === '✕') btn.remove();
+    });
+  // 복제한 노드의 HTML 문자열 반환
+    return clone.outerHTML;
     }
 
     function extractFragment(html) {
@@ -501,6 +615,232 @@
       return html.substring(startIndex + START.length, endIndex);
     }
 
+
+    //HTMl 분리 (0628)
+        
+    function stripHTML(html) {
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = html;
+      return tempDiv.textContent || tempDiv.innerText || '';
+    }
+    // iframe 내 메시지별로 삭제 버튼 옆에 분할 버튼 추가
+    function addButtonsToMessages(doc) {
+      doc.querySelectorAll('.message').forEach(msg => {
+        if (msg.querySelector('.split-btn')) return; // 중복방지
+
+        // 삭제 버튼 생성 (기존 코드에서 가져옴)
+        const delBtn = doc.createElement('button');
+        delBtn.textContent = '✕';
+        delBtn.style.cssText = `
+          position: absolute;
+          top: 5px;
+          right: 5px;
+          background: rgba(255, 50, 50, 0.8);
+          border: none;
+          color: white;
+          font-weight: bold;
+          padding: 2px 6px;
+          border-radius: 50%;
+          cursor: pointer;
+          display: none;
+          z-index: 9999;
+        `;
+
+        // 분할 버튼 생성
+        const splitBtn = doc.createElement('button');
+        splitBtn.textContent = '분할';
+        splitBtn.className = 'split-btn';
+        splitBtn.style.cssText = `
+          position: absolute;
+          top: 5px;
+          right: 40px;
+          background: rgba(50, 100, 255, 0.8);
+          border: none;
+          color: white;
+          font-weight: bold;
+          padding: 2px 6px;
+          border-radius: 4px;
+          cursor: pointer;
+          display: none;
+          z-index: 9999;
+        `;
+
+        msg.style.position = 'relative';
+        msg.appendChild(delBtn);
+        msg.appendChild(splitBtn);
+
+        msg.addEventListener('mouseover', () => {
+          delBtn.style.display = 'block';
+          splitBtn.style.display = 'block';
+        });
+        msg.addEventListener('mouseleave', () => {
+          delBtn.style.display = 'none';
+          splitBtn.style.display = 'none';
+        });
+
+        delBtn.addEventListener('click', e => {
+          e.stopPropagation();
+          const prev = msg.previousElementSibling;
+          if (prev && prev.tagName === 'HR') prev.remove();
+          msg.remove();
+
+          // 삭제 후 현재 분할 구간 내용 저장 갱신
+          saveCurrentSplitList();
+        });
+
+        splitBtn.addEventListener('click', e => {
+          e.stopPropagation();
+          splitAtMessageIndex(doc, msg);
+        });
+      });
+    }
+    // 전역 변수
+    let splitHtmls = {};
+    let currentSplitKey = '';
+    // 분할 처리 함수 - 클릭한 메시지 기준으로 분할
+      
+    function splitAtMessageIndex(doc, clickedMsg) {
+      const messages = Array.from(doc.querySelectorAll('.message'));
+      const idx = messages.indexOf(clickedMsg);
+      if (idx === -1) return;
+
+      // 앞부분, 뒷부분 메시지 분리
+      const part1 = messages.slice(0, idx + 1);
+      const part2 = messages.slice(idx + 1);
+
+      // outerHTML 합치기
+      const htmlPart1 = part1.map(m => m.outerHTML).join('\n');
+      const htmlPart2 = part2.map(m => m.outerHTML).join('\n');
+
+      // 기존 현재 분할 키 삭제
+      if (currentSplitKey && splitHtmls[currentSplitKey]) {
+        delete splitHtmls[currentSplitKey];
+      }
+
+      // 새로운 분할 키 생성
+      const total = messages.length;
+      const key1 = `1-${idx + 1}`;
+      const key2 = `${idx + 2}-${total}`;
+
+      // 분할 데이터 저장
+      splitHtmls[key1] = htmlPart1;
+      splitHtmls[key2] = htmlPart2;
+
+      // 현재 키를 첫 파트로 설정 (예: 1~idx+1)
+      currentSplitKey = key1;
+
+      // 리스트 UI 갱신
+      updateSplitListUI();
+
+       // 첫 번째 분할 구간 iframe에 로드 + 스크롤 최상단 이동
+      loadHTMLtoIframe(htmlPart1);
+      const iframe = document.getElementById('preview');
+      iframe.contentWindow.scrollTo(0, 0);
+    }
+
+    function updateSplitListUI() {
+      const splitList = document.getElementById('splitList');
+      splitList.innerHTML = ''; // 초기화
+
+      Object.entries(splitHtmls).forEach(([key, html],i ) => {
+        const li = document.createElement('li');
+          li.textContent = `(${i + 1})`;  // (1), (2), (3) ... 순서대로 표시
+
+        li.style.userSelect = 'none';
+        li.style.cursor = 'pointer';
+
+        li.addEventListener('click', () => {
+          loadHTMLtoIframe(html);
+          currentSplitKey = key;
+        });
+
+        splitList.appendChild(li);
+      });
+    }
+
+    function saveCurrentSplitList() {
+      const iframe = document.getElementById('preview');
+      const doc = iframe.contentDocument || iframe.contentWindow.document;
+
+      if (!currentSplitKey) return;
+
+      const messages = Array.from(doc.querySelectorAll('.message'));
+      const html = messages.map(m => m.outerHTML).join('\n');
+
+      splitHtmls[currentSplitKey] = html;
+      editor.setValue(html);
+
+      console.log(`현재 분할 구간(${currentSplitKey}) 내용 저장됨`);
+    }
+    let splitCount = 0; // 전역 변수로 선언
+
+    function addSplitList(parts) {
+      const splitList = document.getElementById('splitList');
+      splitList.innerHTML = '';
+      splitHtmls = parts;
+
+      parts.forEach((part, i) => {
+        const li = document.createElement('li');
+        li.textContent = `(${i + 1})`; // 이름 붙이기
+        li.style.userSelect = 'none';
+
+        li.addEventListener('click', () => {
+          currentSplitIndex = i;  // ✅ 선택 인덱스 저장
+          loadHTMLtoIframe(part.html);
+        });
+
+        splitList.appendChild(li);
+      });
+    }
+    function wrapHTML(innerHTML) {
+      return `<!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <title>Split</title>
+    </head>
+    <body>
+    ${innerHTML}
+    </body>
+    </html>`;
+    }
+
+    function getCleanedIframeHTML() {
+    const iframe = document.getElementById("preview");
+    const doc = iframe.contentDocument || iframe.contentWindow.document;
+
+    // ✅ 원본 훼손 방지를 위해 복제
+    const clone = doc.documentElement.cloneNode(true);
+
+    // ✅ 복제본에서 버튼들 제거
+    clone.querySelectorAll('button.split-btn').forEach(btn => btn.remove());
+    clone.querySelectorAll('button').forEach(btn => {
+      if (btn.textContent === '✕') btn.remove();
+    });
+
+    return '<!DOCTYPE html>\n' + clone.outerHTML;
+  }
+    // iframe에 HTML 로드 (기존 스타일 적용은 따로 필요시)
+    function loadHTMLtoIframe(html) {
+       const iframe = document.getElementById('preview');
+
+    function onLoad() {
+      const doc = iframe.contentDocument || iframe.contentWindow.document;
+      
+      iframe.removeEventListener('load', onLoad);
+      // iframe 내용 변경되면 스크롤 최상단으로
+      iframe.contentWindow.scrollTo(0, 0);
+    }
+
+    iframe.addEventListener('load', onLoad);
+
+    const doc = iframe.contentDocument || iframe.contentWindow.document;
+    doc.open();
+    doc.write(html);
+    doc.close();
+
+    
+    }
 
   </script>
 </head>
@@ -555,12 +895,18 @@
         </label>
       </div>
 
+    <!-- 기존 사이드바 내에 적당한 위치에 추가 -->
+    <div class="title">분할 목록</div>
+    <ul id="splitList" style="list-style:none; padding-left:0; max-height: 150px; overflow-y:auto; border:1px solid #ccc; margin-bottom:10px;"></ul>
 
       <input type="text" id="filenameInput" placeholder="파일명 입력 (확장자 제외)" />
       <button id="applyStyleBtn">스타일 적용</button>
-      <button id="copyHTMLBtn">HTML 복사</button>
-      <button id="saveHTMLBtn">HTML 저장</button>
-      <button id="saveTxtBtn">TXT 저장</button>
+      <div>
+        <button id="copyHTMLBtn">HTML 복사</button>
+        <button id="saveHTMLBtn">HTML 저장</button>
+        <button id="saveTxtBtn">TXT 저장</button>
+      </div>
+     
     </div>
 
     <div class="preview-container">
