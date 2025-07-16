@@ -111,6 +111,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/xml/xml.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/css/css.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
@@ -233,6 +234,15 @@
                     font-weight: 400;
                     font-style: normal;
                   }
+                  @font-face {
+                    font-family: 'DPoly Twenty-Sider';
+                    src: url('https://db.onlinewebfonts.com/t/d1dad091c9d8f5250516cf661b68379e.woff2') format('woff2'),
+                        url('https://db.onlinewebfonts.com/t/d1dad091c9d8f5250516cf661b68379e.woff') format('woff'),
+                        url('https://db.onlinewebfonts.com/t/d1dad091c9d8f5250516cf661b68379e.ttf') format('truetype');
+                    font-weight: normal;
+                    font-style: normal;
+                    }
+
                   body {
                     font-family: 'Pretendard-Regular';
                   }
@@ -242,7 +252,49 @@
                     .inlinerollresult{
                     line-height: 2.5 !important;
                     }
-              `;
+                    .sheet-dice-val:before {
+                    content: 't';
+                    font-family: 'DPoly Twenty-Sider';
+                    font-size: 2em;
+                    display: block;
+                    position: absolute;
+                    top: 50%;
+                    left: 55%;
+                    opacity: .3;
+                    z-index: -1;
+                    transform: translate(-50%, -50%);
+                    -webkit-transform: translate(-50%, -50%);
+                    }
+                                        
+                    .sheet-detail-dice > *:before {
+                        content: 't';
+                        font-family: 'DPoly Twenty-Sider';
+                        font-weight: 900;
+                        display: block;
+                        position: absolute;
+                        top: 50%;
+                        left: 65%;
+                        font-size: 1.5em;
+                        opacity: .5;
+                        z-index: -1;
+                        transform: translate(-50%, -50%);
+                        -webkit-transform: translate(-50%, -50%);
+                    }
+                   .sheet-target-result > *:before {
+                        content: '';
+                        display: block;
+                        position: absolute;
+                        top: 0;
+                        bottom: 0;
+                        left: 0;
+                        right: 0;
+                        z-index: -1;
+                        background: linear-gradient(90deg, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0) 100%);
+                    }    
+                    span.inlinerollresult.showtip{
+                        border: 0px !important;
+                    }
+                    `;
           doc.head.appendChild(style);
 
 
