@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>원클릭 코코로그 스타일</title>
+    <title>껍질 미리-깐 코코포 로그</title>
     <style>
         * {
             box-sizing: border-box;
@@ -371,7 +371,7 @@
 <body>
     <div class="container">
         <div class="sidebar">
-            <h2>껍질 미리-깐 코코포 로그 V1.0.1</h2>
+            <h2>껍질 미리-깐 코코포 로그 v1.0.1</h2>
             <p style="font-size:10pt;">
                 오류 발생시: @waSANkku로 DM
                 <br/>
@@ -683,38 +683,33 @@
         }
 
         /* Light theme overrides */
-        body.light {
-            background-color: #f1f1f1;
-            color: #000000;
-        }
-
-        body.light .ccfolia_wrap {
+        .ccfolia_wrap.light {
             background-color: #f9fafb !important;
         }
 
-        body.light .gap {
+        .ccfolia_wrap.light .gap {
             border-top-color: rgba(0, 0, 0, 0.1);
         }
 
-        body.light p,
-        body.light span {
+        .ccfolia_wrap.light p,
+        .ccfolia_wrap.light span {
             color: #575757 !important;
         }
 
-        body.light .msg_container {
+        .ccfolia_wrap.light .msg_container {
             background: transparent !important;
         }
 
-        body.light .player.system {
+        .ccfolia_wrap.light .player.system {
             background: rgb(0 0 0 / 4%) !important;
         }
 
-        body.light .player.system .Uname {
+        .ccfolia_wrap.light .player.system .Uname {
             background: #0000001c !important;
             color: #5a6671 !important;
         }
 
-        body.light .player.system .Utext {
+        .ccfolia_wrap.light .player.system .Utext {
             color: #4b5563 !important;
         }
       </style>
@@ -722,8 +717,13 @@
   `;
 
             const isLightTheme = document.getElementById('lightThemeToggle').checked;
-            const bodyClass = isLightTheme ? ' class="light"' : '';
-            const body = `<body${bodyClass}>${wrap.outerHTML}</body>`;
+            if (isLightTheme) {
+                wrap.classList.add('light');
+            }
+            const body = `<body>${wrap.outerHTML}</body>`;
+            if (isLightTheme) {
+                wrap.classList.remove('light');
+            }
 
             const fullHtml = `${doctype}\n${htmlOpen}\n${head}\n${body}\n${htmlClose}`;
 
@@ -828,38 +828,33 @@
         }
 
         /* Light theme overrides */
-        body.light {
-            background-color: #f1f1f1;
-            color: #000000;
-        }
-
-        body.light .ccfolia_wrap {
+        .ccfolia_wrap.light {
             background-color: #f9fafb !important;
         }
 
-        body.light .gap {
+        .ccfolia_wrap.light .gap {
             border-top-color: rgba(0, 0, 0, 0.1);
         }
 
-        body.light p,
-        body.light span {
+        .ccfolia_wrap.light p,
+        .ccfolia_wrap.light span {
             color: #575757 !important;
         }
 
-        body.light .msg_container {
+        .ccfolia_wrap.light .msg_container {
             background: transparent !important;
         }
 
-        body.light .player.system {
+        .ccfolia_wrap.light .player.system {
             background: rgb(0 0 0 / 4%) !important;
         }
 
-        body.light .player.system .Uname {
+        .ccfolia_wrap.light .player.system .Uname {
             background: #0000001c !important;
             color: #5a6671 !important;
         }
 
-        body.light .player.system .Utext {
+        .ccfolia_wrap.light .player.system .Utext {
             color: #4b5563 !important;
         }
       </style>
@@ -867,8 +862,13 @@
   `;
 
             const isLightTheme = document.getElementById('lightThemeToggle').checked;
-            const bodyClass = isLightTheme ? ' class="light"' : '';
-            const body = `<body${bodyClass}>${wrap.outerHTML}</body>`;
+            if (isLightTheme) {
+                wrap.classList.add('light');
+            }
+            const body = `<body>${wrap.outerHTML}</body>`;
+            if (isLightTheme) {
+                wrap.classList.remove('light');
+            }
 
             const fullHtml = `${doctype}\n${htmlOpen}\n${head}\n${body}\n${htmlClose}`;
             const blob = new Blob([fullHtml], { type: 'text/plain' });
@@ -986,6 +986,9 @@
                     let pageToken = null;
                     let page = 1;
 
+                    // 진행 상황 표시 영역
+                    previewArea.innerHTML = '<p style="color:#888;padding:20px;">메시지를 불러오는 중...</p>';
+
                     try {
                         while (true) {
                             const url = new URL(baseUrl);
@@ -999,6 +1002,8 @@
 
                             if (json.documents) {
                                 allDocs = allDocs.concat(json.documents);
+                                // 진행 상황 업데이트
+                                previewArea.innerHTML = `<p style="color:#888;padding:20px;">페이지 ${page} 로딩 중... (${allDocs.length}개 메시지)</p>`;
                             }
 
                             if (!json.nextPageToken) break;
