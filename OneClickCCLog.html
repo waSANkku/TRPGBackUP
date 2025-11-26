@@ -21,29 +21,42 @@
 
         .sidebar {
             width: 320px;
-            padding: 20px;
-            background-color: #f7f7f7;
-            border-right: 1px solid #ccc;
+            padding: 20px 18px;
+            background-color: #ffffff;
+            border-right: 1px solid #e5e7eb;
             display: flex;
             flex-direction: column;
-            gap: 15px;
+            gap: 16px;
         }
 
-        .drop-zone {
-            border: 2px dashed #aaa;
-            border-radius: 10px;
-            padding: 20px;
-            text-align: center;
-            color: #666;
-            background-color: #fff;
-            transition: background-color 0.3s, border-color 0.3s;
-            cursor: pointer;
+        .sidebar h2 {
+            margin: 0 0 4px;
+            font-size: 16px;
+            font-weight: 700;
+            color: #111827;
         }
 
-        .drop-zone.dragover {
-            background-color: #eef6ff;
-            border-color: #3399ff;
-            color: #3399ff;
+        .sidebar > p {
+            margin: 0;
+            font-size: 12px;
+            line-height: 1.6;
+            color: #6b7280;
+        }
+
+        .sidebar > p a {
+            color: #2563eb;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .sidebar > p a:hover {
+            text-decoration: underline;
+        }
+
+        .sidebar > hr {
+            margin: 8px 0 4px;
+            border: 0;
+            border-top: 1px solid #e5e7eb;
         }
 
         .preview {
@@ -56,23 +69,169 @@
         }
 
         button {
-            padding: 10px;
-            font-size: 14px;
+            padding: 9px 10px;
+            font-size: 13px;
             cursor: pointer;
+            border-radius: 8px;
+            border: 1px solid #d1d5db;
+            background-color: #ffffff;
+            color: #111827;
+            transition: background-color 0.15s, border-color 0.15s, box-shadow 0.15s;
+            width: 100%;
         }
 
+        button:hover {
+            background-color: #f3f4f6;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.25);
+        }
+
+        #channelFilter {
+            margin-top: 8px;
+            display: flex;
+            flex-wrap: nowrap !important;
+            gap: 6px;
+            overflow-x: auto;
+            padding-bottom: 2px;
+        }
+
+        #channelFilter button {
+            background-color: #ffffff;
+            border: 1px solid #d1d5db;
+            border-radius: 999px;
+            padding: 4px 10px;
+            font-size: 11px;
+            color: #374151;
+        }
+
+        #channelFilter button:hover {
+            background-color: #f3f4f6;
+        }
+
+        #channelFilter button.active {
+            background-color: #2563eb;
+            color: white;
+            border-color: #2563eb;
+        }
+
+        .sidebar-tabs {
+            display: flex;
+            margin-top: 10px;
+            border-radius: 999px;
+            padding: 2px;
+            background-color: #e5e7eb;
+            gap: 2px;
+        }
+
+        .sidebar-tab {
+            flex: 1;
+            padding: 6px 0;
+            font-size: 12px;
+            background-color: transparent;
+            border: none;
+            cursor: pointer;
+            text-align: center;
+            border-radius: 999px;
+            color: #6b7280;
+        }
+
+        .sidebar-tab.active {
+            background-color: #2563eb;
+            color: #f9fafb;
+        }
+
+        .tab-panel {
+            margin-top: 10px;
+            padding: 10px 10px 8px;
+            border-radius: 10px;
+            background-color: #f9fafb;
+            border: 1px solid #e5e7eb;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .tab-panel.hidden {
+            display: none;
+        }
+
+        /* sidebar form controls */
         label {
-            font-size: 14px;
+            font-size: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            color: #374151;
+        }
+
+        .sidebar input[type="text"],
+        .sidebar input[type="number"] {
+            width: 100%;
+            padding: 6px 10px;
+            border-radius: 8px;
+            border: 1px solid #d1d5db;
+            font-size: 12px;
+            box-sizing: border-box;
+            background-color: #ffffff;
+            color: #111827;
+        }
+
+        .sidebar input[type="text"]::placeholder,
+        .sidebar input[type="number"]::placeholder {
+            color: #9ca3af;
+        }
+
+        .sidebar input[type="text"]:focus,
+        .sidebar input[type="number"]:focus {
+            outline: none;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.35);
         }
 
         input[type="number"] {
             width: 60px;
             padding: 5px;
-            margin-left: 5px;
         }
 
+        /* tab-narrator modern layout */
+        #tab-narrator {
+            flex-direction: column;
+            gap: 8px;
+        }
 
+        #tab-narrator label {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
 
+        #tab-narrator label:last-child {
+            flex-direction: row;
+            align-items: center;
+            gap: 6px;
+            margin-top: 4px;
+        }
+
+        #tab-narrator input[type="text"] {
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        #tab-narrator input[type="checkbox"] {
+            width: auto;
+        }
+
+        /* tab-style 동일 스타일 */
+        #tab-style label:last-child {
+            flex-direction: row;
+            align-items: center;
+            gap: 6px;
+            margin-top: 4px;
+        }
+
+        #tab-style input[type="checkbox"] {
+            width: auto;
+        }
 
         p {
             margin: 0;
@@ -89,6 +248,12 @@
             font-size: 16px;
             font-family: 'Arial', sans-serif;
             line-height: 1.5;
+        }
+
+        .preview p,
+        .preview span,
+        .preview b {
+            white-space: pre-wrap;
         }
 
         b {
@@ -135,16 +300,70 @@
             box-sizing: border-box;
             text-align: left;
             padding: 16px 16px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
         }
-        
+
         hr{
-            margin: 0px;
-            padding: 0px;
-            border-width: 1px 0px 0px;
-            flex-shrink: 0;
-            border-top-style: solid;
-            border-top-color: rgba(255, 255, 255, 0.08);
-            display: block;
+            display: none;
+        }
+
+        /* 전역 삭제 버튼 */
+        #globalDeleteBtn {
+            position: fixed;
+            background: rgba(255, 50, 50, 0.8);
+            border: none;
+            color: white;
+            font-weight: bold;
+            padding: 2px 6px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: none;
+            z-index: 9999;
+            pointer-events: auto;
+            width: 24px;
+            height: 24px;
+            font-size: 14px;
+            line-height: 1;
+        }
+
+        .preview .gap:hover {
+            outline: 1px solid rgba(255, 50, 50, 0.3);
+        }
+
+        /* Light theme overrides */
+        .preview.light {
+            background-color: #f1f1f1;
+            color: #000000;
+        }
+
+        .preview.light .ccfolia_wrap {
+            background-color: #f9fafb !important;
+        }
+
+        .preview.light .gap {
+            border-top-color: rgba(0, 0, 0, 0.1);
+        }
+
+        .preview.light p,
+        .preview.light span {
+            color: #575757 !important;
+        }
+
+        .preview.light .msg_container {
+            background: transparent !important;
+        }
+
+        .preview.light .player.system {
+            background: rgb(0 0 0 / 4%) !important;
+        }
+
+        .preview.light .player.system .Uname {
+            background: #0000001c !important;
+            color: #5a6671 !important;
+        }
+
+        .preview.light .player.system .Utext {
+            color: #4b5563 !important;
         }
     </style>
 </head>
@@ -152,17 +371,17 @@
 <body>
     <div class="container">
         <div class="sidebar">
-            <h2>껍질 미리-깐 코코로그</h2>
+            <h2>껍질 미리-깐 코코포 로그</h2>
             <p style="font-size:10pt;">
-                <a href="https://sukenell.github.io/cclog_custom/" target='_blank'>웹</a>에서 변환한 파일을 코코로그 스타일로 변경해주는
-                플러그인입니다.
+                오류 발생시: @waSANkku로 DM
                 <br/>
-                혼자서 콘솔창에 입력해가면서 쓰다가 딸깍이 필요해서 만들었어요...
+                업데이트 내역 <a href="https://wakku0201.tistory.com/135" target="_blank">바로가기</a>
                 <br/>
-                오류가 발생한다면 @waSANkku로 연락주시길...
-                <br/>
-                2025-08-08 수정 : 공개적인 장소에서 링크 업로드를 제외하면 지인 간 공유는 신경쓰지 않습니다. 편하게 사용해주세요! 
-                <br/> 
+                티스토리 비밀번호: waSANkku
+                <br />
+                <br />
+                2025-08-08 수정 : 공개적인 장소에서 링크 업로드를 제외하면 지인 간 공유는 신경쓰지 않습니다. 편하게 사용해주세요!
+                <br />
                 (단 공개 장소에서 링크 공유 적발시 불시에 내리고 1차 지인 한정 공유로 전환)
             </p>
             <hr />
@@ -170,90 +389,137 @@
                 룸 ID:
                 <input type="text" id="roomInput" placeholder="" />
             </label>
-            
+
             <button onclick="loadFirestoreMessages()">룸 메시지 불러오기</button>
             <div id="channelFilter" style="display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px;"></div>
-            <input type="file" id="htmlFileInput" accept=".html,.htm" />
-            <div id="dropZone" class="drop-zone">
-                여기로 파일을 드래그하거나<br><strong>클릭하여 선택</strong>하세요.
+
+            <div class="sidebar-tabs">
+                <button type="button" class="sidebar-tab active" data-target="tab-narrator">서술자 설정</button>
+                <button type="button" class="sidebar-tab" data-target="tab-style">스타일 설정</button>
             </div>
-            <label>
-                서술자 이름:
-                <input type="text" id="narratorInput" placeholder="이름 정확히 입력" /></label>
-            <label><input type="checkbox" id="removeDateCheckbox" checked /> 날짜 제거</label>
 
-            <label>
-                패딩 (상하 px):
-                <input type="number" id="paddingInput" value="2" min="0" />
-            </label>
-            <input type="text" id="filenameInput" placeholder="파일명 입력 (확장자 제외)" />
+            <div id="tab-narrator" class="tab-panel">
+                <label>
+                    서술자 이름:
+                    <input type="text" id="narratorInput" placeholder="이름 정확히 입력" />
+                </label>
+                <label>
+                    <input type="checkbox" id="removeNarratorItalicCheckbox" /> 서술자 기울임 제거
+                </label>
+            </div>
 
-            <button id="applyStyleBtn">스타일 적용</button>
-            <button id="saveHTMLBtn">HTML 저장</button>
-            <button id="saveTxtBtn">TXT 저장</button>
+            <div id="tab-style" class="tab-panel hidden">
+                <label>
+                    패딩 (상하 px):
+                    <input type="number" id="paddingInput" value="16" min="0" />
+                </label>
+                <label>
+                    <input type="checkbox" id="lightThemeToggle" /> 라이트 테마
+                </label>
+            </div>
+
+            <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 6px;">
+                <button id="applyStyleBtn">스타일 적용</button>
+                <button id="saveHTMLBtn">HTML 저장</button>
+                <button id="saveTxtBtn">TXT 저장</button>
+            </div>
+
         </div>
 
         <div class="preview" id="previewArea"></div>
     </div>
 
+    <button id="globalDeleteBtn">✕</button>
+
     <script>
-        const fileInput = document.getElementById('htmlFileInput');
-        const dropZone = document.getElementById('dropZone');
         const previewArea = document.getElementById('previewArea');
         const styleButton = document.getElementById('applyStyleBtn');
-        const removeDateCheckbox = document.getElementById('removeDateCheckbox');
         const paddingInput = document.getElementById('paddingInput');
-        let loadedHTML = "";
 
-        function loadHTMLFile(file) {
-            if (!file || !file.name.match(/\.html?$/)) {
-                alert("HTML 또는 HTM 파일만 업로드할 수 있습니다.");
-                return;
+        // 사이드바 탭 전환
+        const sidebarTabs = document.querySelectorAll('.sidebar-tab');
+        const tabPanels = document.querySelectorAll('.tab-panel');
+
+        sidebarTabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                const targetId = tab.getAttribute('data-target');
+
+                sidebarTabs.forEach(t => t.classList.remove('active'));
+                tabPanels.forEach(panel => {
+                    if (panel.id === targetId) {
+                        panel.classList.remove('hidden');
+                    } else {
+                        panel.classList.add('hidden');
+                    }
+                });
+
+                tab.classList.add('active');
+            });
+        });
+
+        // 전역 삭제 버튼 로직
+        const globalDeleteBtn = document.getElementById('globalDeleteBtn');
+        let currentHoverGap = null;
+
+        // 이벤트 위임 방식으로 변경
+        document.addEventListener('mouseover', (e) => {
+            const gap = e.target.closest('.gap');
+            if (gap && previewArea.contains(gap)) {
+                currentHoverGap = gap;
+                const rect = gap.getBoundingClientRect();
+                const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+                const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+                globalDeleteBtn.style.left = (rect.right - 30 + scrollLeft) + 'px';
+                globalDeleteBtn.style.top = (rect.top + 5 + scrollTop) + 'px';
+                globalDeleteBtn.style.display = 'block';
+            } else if (!e.target.closest('#globalDeleteBtn')) {
+                // 버튼 위가 아니고 gap 위도 아니면 숨김
+                if (currentHoverGap && !currentHoverGap.contains(e.target)) {
+                    globalDeleteBtn.style.display = 'none';
+                    currentHoverGap = null;
+                }
             }
-
-            const reader = new FileReader();
-            reader.onload = function (e) {
-                loadedHTML = e.target.result;
-                previewArea.innerHTML = loadedHTML;
-                applyStyleToPreviewArea();
-            };
-            reader.readAsText(file);
-        }
-
-        // Drag & Drop
-        ['dragenter', 'dragover'].forEach(evt =>
-            dropZone.addEventListener(evt, e => {
-                e.preventDefault();
-                dropZone.classList.add('dragover');
-            })
-        );
-
-        ['dragleave', 'drop'].forEach(evt =>
-            dropZone.addEventListener(evt, e => {
-                e.preventDefault();
-                dropZone.classList.remove('dragover');
-            })
-        );
-
-        dropZone.addEventListener('drop', e => {
-            const file = e.dataTransfer.files[0];
-            loadHTMLFile(file);
         });
 
-        dropZone.addEventListener('click', () => {
-            fileInput.click();
+        globalDeleteBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (currentHoverGap) {
+                currentHoverGap.remove();
+                globalDeleteBtn.style.display = 'none';
+                currentHoverGap = null;
+            }
         });
 
-        fileInput.addEventListener('change', e => {
-            loadHTMLFile(e.target.files[0]);
+        // 버튼 위에 마우스가 있을 때 버튼 유지
+        globalDeleteBtn.addEventListener('mouseenter', () => {
+            if (currentHoverGap) {
+                globalDeleteBtn.style.display = 'block';
+            }
         });
 
+        // 라이트 테마 토글
+        const lightThemeToggle = document.getElementById('lightThemeToggle');
+        lightThemeToggle.addEventListener('change', () => {
+            if (lightThemeToggle.checked) {
+                previewArea.classList.add('light');
+            } else {
+                previewArea.classList.remove('light');
+            }
+        });
+
+        // 스타일 적용 버튼
         styleButton.addEventListener('click', () => {
-            applyStyleToPreviewArea();
+            // Firestore 메시지가 로드되어 있으면 다시 렌더링
+            if (window.allMessages && window.allMessages.length > 0) {
+                renderMessages();
+            } else {
+                // HTML 파일 로드 방식일 경우
+                applyStyleToPreviewArea();
+            }
         });
 
         function applyStyleToPreviewArea() {
-            const removeDate = removeDateCheckbox.checked;
             const paddingValue = paddingInput.value || "2";
             const doc = previewArea;
             const narratorName = document.getElementById('narratorInput')?.value?.trim();
@@ -262,15 +528,6 @@
             doc.querySelectorAll('.ccfolia_wrap').forEach(el => {
                 el.style.backgroundColor = '#1f1e22';
             });
-
-            // 날짜 제거
-            if (removeDate) {
-                doc.querySelectorAll('.gap b').forEach(el => {
-                    if (/^\s*-\s*\d{4}\/\d{2}\/\d{2}\s*$/.test(el.textContent)) {
-                        el.remove();
-                    }
-                });
-            }
 
             // SYSTEM 형식 변환
             doc.querySelectorAll('.gap').forEach(old => {
@@ -312,11 +569,6 @@
                 }
             });
 
-            // hr 보이기
-            doc.querySelectorAll('hr').forEach(el => {
-                el.style.display = 'block';
-            });
-
             // 더블클릭 편집
             doc.querySelectorAll('.gap span').forEach(span => {
                 span.addEventListener('click', () => {
@@ -328,68 +580,23 @@
                 });
                 span.addEventListener('keydown', (e) => {
                     if (e.key === 'Enter') {
-                        e.preventDefault();
-                        span.blur();
+                        if (e.shiftKey) {
+                            // Shift+Enter: 줄바꿈 허용
+                            return;
+                        } else {
+                            // Enter만: 편집 완료
+                            e.preventDefault();
+                            span.blur();
+                        }
                     }
                 });
             });
 
             if (narratorName) applyNarratorMode(narratorName);
-
-            document.querySelectorAll('hr').forEach(hr => {
-                const style = hr.style;
-                style.borderRightStyle = '';
-                style.borderBottomStyle = '';
-                style.borderLeftStyle = '';
-                style.borderRightColor = '';
-                style.borderBottomColor = '';
-                style.borderLeftColor = '';
-                style.borderImage = '';
-            });
-
-            // 삭제 버튼
-            doc.querySelectorAll('.gap').forEach(gap => {
-                const delBtn = document.createElement('button');
-                delBtn.textContent = '✕';
-                delBtn.style.cssText = `
-          position: absolute;
-          top: 5px;
-          right: 5px;
-          background: rgba(255, 50, 50, 0.8);
-          border: none;
-          color: white;
-          font-weight: bold;
-          padding: 2px 6px;
-          border-radius: 50%;
-          cursor: pointer;
-          display: none;
-          z-index: 9999;
-        `;
-
-                gap.style.position = 'relative';
-                gap.appendChild(delBtn);
-
-                gap.addEventListener('mouseover', () => {
-                    delBtn.style.display = 'block';
-                });
-                gap.addEventListener('mouseleave', () => {
-                    delBtn.style.display = 'none';
-                });
-
-                delBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    const hr = gap.previousElementSibling;
-                    if (hr && hr.tagName === 'HR') {
-                        hr.remove();
-                    }
-                    gap.remove();
-                });
-            });
         }
 
         const saveButton = document.getElementById('saveHTMLBtn');
         saveButton.addEventListener('click', () => {
-            removeDeleteButtonsBeforeExport();
             const wrap = previewArea.querySelector('.ccfolia_wrap');
             if (!wrap) {
                 alert('.ccfolia_wrap 요소를 찾을 수 없습니다.');
@@ -408,6 +615,7 @@
      
     p{
     margin: 0;
+    white-space: pre-wrap;
     }
 
     b{
@@ -420,6 +628,7 @@
         font-size: 16px;
         font-family: 'Arial', sans-serif;
         line-height: 1.5;
+        white-space: pre-wrap;
     }
 
     b {
@@ -452,7 +661,7 @@
     display: none !important ;
     }
 
-            
+
     .gap{
     gap: 15px;
     display: flex;
@@ -465,23 +674,56 @@
     box-sizing: border-box;
     text-align: left;
     padding: 16px 16px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
     }
 
-        
+
         hr{
-            margin: 0px;
-            padding: 0px;
-            border-width: 1px 0px 0px;
-            flex-shrink: 0;
-            border-top-style: solid;
-            border-top-color: rgba(255, 255, 255, 0.08);
-            display: block;
+            display: none;
+        }
+
+        /* Light theme overrides */
+        body.light {
+            background-color: #f1f1f1;
+            color: #000000;
+        }
+
+        body.light .ccfolia_wrap {
+            background-color: #f9fafb !important;
+        }
+
+        body.light .gap {
+            border-top-color: rgba(0, 0, 0, 0.1);
+        }
+
+        body.light p,
+        body.light span {
+            color: #575757 !important;
+        }
+
+        body.light .msg_container {
+            background: transparent !important;
+        }
+
+        body.light .player.system {
+            background: rgb(0 0 0 / 4%) !important;
+        }
+
+        body.light .player.system .Uname {
+            background: #0000001c !important;
+            color: #5a6671 !important;
+        }
+
+        body.light .player.system .Utext {
+            color: #4b5563 !important;
         }
       </style>
     </head>
   `;
 
-            const body = `<body>${wrap.outerHTML}</body>`;
+            const isLightTheme = document.getElementById('lightThemeToggle').checked;
+            const bodyClass = isLightTheme ? ' class="light"' : '';
+            const body = `<body${bodyClass}>${wrap.outerHTML}</body>`;
 
             const fullHtml = `${doctype}\n${htmlOpen}\n${head}\n${body}\n${htmlClose}`;
 
@@ -489,20 +731,18 @@
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            const filename = document.getElementById('filenameInput').value.trim() || 'ccfolia-wrap';
+            const roomIdForName = document.getElementById('roomInput').value.trim();
+            const filename = roomIdForName || 'ccfolia-wrap';
 
             a.download = filename + '.html';
             a.click();
             URL.revokeObjectURL(url);
-
-            restoreDeleteButtonsAfterExport(); 
         });
 
 
         // 텍스트 저장
         const saveTxtBtn = document.getElementById('saveTxtBtn');
         saveTxtBtn.addEventListener('click', () => {
-            removeDeleteButtonsBeforeExport();
             const wrap = previewArea.querySelector('.ccfolia_wrap');
             if (!wrap) {
                 alert('.ccfolia_wrap 요소를 찾을 수 없습니다.');
@@ -520,6 +760,7 @@
      
     p{
     margin: 0;
+    white-space: pre-wrap;
     }
 
     b{
@@ -532,6 +773,7 @@
         font-size: 16px;
         font-family: 'Arial', sans-serif;
         line-height: 1.5;
+        white-space: pre-wrap;
     }
 
     b {
@@ -564,7 +806,7 @@
     display: none !important ;
     }
 
-            
+
     .gap{
     gap: 15px;
     display: flex;
@@ -577,36 +819,68 @@
     box-sizing: border-box;
     text-align: left;
     padding: 16px 16px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
     }
 
-        
+
         hr{
-            margin: 0px;
-            padding: 0px;
-            border-width: 1px 0px 0px;
-            flex-shrink: 0;
-            border-top-style: solid;
-            border-top-color: rgba(255, 255, 255, 0.08);
-            display: block;
+            display: none;
+        }
+
+        /* Light theme overrides */
+        body.light {
+            background-color: #f1f1f1;
+            color: #000000;
+        }
+
+        body.light .ccfolia_wrap {
+            background-color: #f9fafb !important;
+        }
+
+        body.light .gap {
+            border-top-color: rgba(0, 0, 0, 0.1);
+        }
+
+        body.light p,
+        body.light span {
+            color: #575757 !important;
+        }
+
+        body.light .msg_container {
+            background: transparent !important;
+        }
+
+        body.light .player.system {
+            background: rgb(0 0 0 / 4%) !important;
+        }
+
+        body.light .player.system .Uname {
+            background: #0000001c !important;
+            color: #5a6671 !important;
+        }
+
+        body.light .player.system .Utext {
+            color: #4b5563 !important;
         }
       </style>
     </head>
   `;
 
-            const body = `<body>${wrap.outerHTML}</body>`;
+            const isLightTheme = document.getElementById('lightThemeToggle').checked;
+            const bodyClass = isLightTheme ? ' class="light"' : '';
+            const body = `<body${bodyClass}>${wrap.outerHTML}</body>`;
 
             const fullHtml = `${doctype}\n${htmlOpen}\n${head}\n${body}\n${htmlClose}`;
             const blob = new Blob([fullHtml], { type: 'text/plain' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-
-            const filename = document.getElementById('filenameInput').value.trim() || 'ccfolia-wrap';
+            const roomIdForName = document.getElementById('roomInput').value.trim();
+            const filename = roomIdForName || 'ccfolia-wrap';
 
             a.download = filename + '.txt';
             a.click();
             URL.revokeObjectURL(url);
-            restoreDeleteButtonsAfterExport(); 
         });
     
     
@@ -698,7 +972,8 @@
             }
 
 
-            let allMessages = [];
+            window.allMessages = [];
+            window.selectedChannels = new Set();
 
                 async function loadFirestoreMessages() {
                     const rawInput = document.getElementById('roomInput').value.trim();
@@ -742,7 +1017,7 @@
                             return new Date(aTime) - new Date(bTime); // 오래된 → 최신
                         });
 
-                        allMessages = sorted.map(doc => {
+                        window.allMessages = sorted.map(doc => {
                             const f = doc.fields;
 
                             // 주사위 결과 추출 시도
@@ -753,16 +1028,33 @@
                                 rollResult = "";
                             }
 
+                            // 채널명 정규화: "メイン"을 "메인"으로 통일
+                            let channelName = f.channelName?.stringValue ?? "기타";
+                            if (channelName === "メイン") {
+                                channelName = "메인";
+                            }
+
+                            // 포트레이트 우선순위: extend.portrait.url > iconUrl
+                            let iconUrl = "";
+                            try {
+                                iconUrl = f.extend?.mapValue?.fields?.portrait?.mapValue?.fields?.url?.stringValue
+                                       || f.iconUrl?.stringValue
+                                       || "";
+                            } catch (e) {
+                                iconUrl = f.iconUrl?.stringValue ?? "";
+                            }
 
                             return {
                                 name: f.name?.stringValue ?? "이름 없음",
                                 text: f.text?.stringValue + (rollResult ? ` > ${rollResult}` : "") ?? "",
-                                icon: f.iconUrl?.stringValue ?? "",
+                                icon: iconUrl,
                                 color: f.color?.stringValue ?? "#ccc",
-                                channel: f.channelName?.stringValue ?? "기타"
+                                channel: channelName
                             };
                         });
 
+                        // 초기 로딩 시 메인 채널만 선택
+                        window.selectedChannels = new Set(["메인"]);
                         renderChannelFilter();
                         renderMessages();
 
@@ -773,104 +1065,187 @@
                 }
 
                 function renderChannelFilter() {
-                    const channelSet = new Set(allMessages.map(m => m.channel));
-                    const html = ['<button onclick="renderMessages(null)">전체</button>']
-                        .concat([...channelSet].map(ch => `<button onclick="renderMessages('${ch}')">${ch}</button>`))
-                        .join('');
-                    document.getElementById('channelFilter').innerHTML = html;
+                    const channelSet = new Set(window.allMessages.map(m => m.channel));
+                    const filterDiv = document.getElementById('channelFilter');
+                    filterDiv.innerHTML = '';
+
+                    // 전체 버튼
+                    const allBtn = document.createElement('button');
+                    allBtn.textContent = '전체';
+                    allBtn.onclick = () => toggleAllChannels();
+                    if (window.selectedChannels.size === 0) {
+                        allBtn.classList.add('active');
+                    }
+                    filterDiv.appendChild(allBtn);
+
+                    // 각 채널 버튼
+                    [...channelSet].forEach(ch => {
+                        const btn = document.createElement('button');
+                        btn.textContent = ch;
+                        btn.onclick = () => toggleChannel(ch);
+                        if (window.selectedChannels.has(ch)) {
+                            btn.classList.add('active');
+                        }
+                        filterDiv.appendChild(btn);
+                    });
                 }
 
-                function renderMessages(filterChannel = null) {
+                function toggleAllChannels() {
+                    if (window.selectedChannels.size === 0) {
+                        // 이미 전체가 선택되어 있으면 아무것도 안함
+                        return;
+                    }
+                    window.selectedChannels.clear();
+                    renderChannelFilter();
+                    renderMessages();
+                }
+
+                function toggleChannel(channel) {
+                    if (window.selectedChannels.has(channel)) {
+                        window.selectedChannels.delete(channel);
+                    } else {
+                        window.selectedChannels.add(channel);
+                    }
+                    renderChannelFilter();
+                    renderMessages();
+                }
+
+                function renderMessages() {
                     const target = document.createElement('div');
                     target.className = 'ccfolia_wrap';
+                    target.style.backgroundColor = '#1f1e22';
 
-                    const filtered = filterChannel
-                        ? allMessages.filter(m => m.channel === filterChannel)
-                        : allMessages;
+                    // 선택된 채널이 없으면 전체 표시
+                    const filtered = window.selectedChannels.size === 0
+                        ? window.allMessages
+                        : window.allMessages.filter(m => window.selectedChannels.has(m.channel));
+
+                    const narratorName = document.getElementById('narratorInput')?.value?.trim();
+                    const removeItalic = document.getElementById('removeNarratorItalicCheckbox')?.checked;
+                    const paddingValue = paddingInput.value || "16";
 
                     filtered.forEach(m => {
+                        // SYSTEM 메시지 처리
+                        if (m.name.toLowerCase() === 'system') {
+                            const systemDiv = document.createElement('div');
+                            systemDiv.className = 'player system';
+                            systemDiv.style.cssText = `
+                                display: flex;
+                                overflow: hidden;
+                                padding: 0px;
+                                border-top: 1px solid rgba(255, 255, 255, 0.08);
+                                background: #33313b;
+                                text-align: center;
+                                justify-content: center;
+                            `;
+
+                            systemDiv.innerHTML = `
+                                <div class="infoWrap" style="display: none">
+                                    <div class="imgWrap" style="width: 40px;height: 40px;overflow: hidden;background-color: rgba(0, 0, 0, 0.31);float: left;border-radius: 5px"></div>
+                                </div>
+                                <div class="textWrap" style="float: left;line-height: 1.6;margin-left: 0;color: #FFFFFF;padding: 10px 20px">
+                                    <p class="Uname" style="margin: 0px 0px 6px 0px;font-weight: 800;color: #858296;font-size: 13px;letter-spacing: 1px;padding: 3px 8px;border-radius: 15px;background: #000000">system</p>
+                                    <p class="Utext" style="margin: 0;font-weight: 400;color: #908e9a;font-size: 15px;letter-spacing: -1px">${m.text}</p>
+                                </div>
+                            `;
+                            target.appendChild(systemDiv);
+                            return;
+                        }
+
                         const gap = document.createElement('div');
                         gap.className = 'gap';
-                        gap.style.cssText = 'display: flex; background-color: transparent; position: relative;';
 
-                        const msgContainer = document.createElement('div');
-                        msgContainer.className = 'msg_container';
+                        // 서술자 모드인지 확인
+                        const isNarrator = narratorName && m.name === narratorName;
 
-                        const img = document.createElement('img');
-                        img.src = m.icon;
-                        img.alt = m.name;
-                        if(m.icon){
-                            img.style.cssText = 'width: 40px; height: 40px; object-fit: cover; object-position: top center; border-radius: 5px;';
+                        if (isNarrator) {
+                            // 서술자 스타일
+                            const fontStyleValue = removeItalic ? 'normal' : 'italic';
+                            gap.style.cssText = 'display: flow-root; background-color: transparent; position: relative; padding: 2px 16px;';
 
+                            const p = document.createElement('p');
+                            p.style.cssText = `color: rgb(221, 221, 221); display: flow-root; font-style: ${fontStyleValue}; font-weight: bold; text-align: center; margin: 8px;`;
+
+                            const spanText = document.createElement('span');
+                            spanText.textContent = m.text;
+                            p.appendChild(spanText);
+                            gap.appendChild(p);
                         } else {
-                            img.style.cssText = 'width: 0px; height: 40px; object-fit: cover; object-position: top center; border-radius: 5px;';
+                            // 일반 메시지 스타일
+                            gap.style.cssText = `display: flex; background-color: transparent; position: relative; padding: ${paddingValue}px 16px;`;
 
+                            const msgContainer = document.createElement('div');
+                            msgContainer.className = 'msg_container';
+
+                            const img = document.createElement('img');
+                            img.src = m.icon;
+                            img.alt = m.name;
+                            if(m.icon){
+                                img.style.cssText = 'width: 40px; height: 40px; object-fit: cover; object-position: top center; border-radius: 5px;';
+                            } else {
+                                img.style.cssText = 'width: 0px; height: 40px; object-fit: cover; object-position: top center; border-radius: 5px;';
+                            }
+                            msgContainer.appendChild(img);
+                            gap.appendChild(msgContainer);
+
+                            const p = document.createElement('p');
+                            p.style.color = 'rgb(221, 221, 221)';
+
+                            const spanEmpty = document.createElement('span');
+                            const spanName = document.createElement('span');
+                            spanName.textContent = m.name;
+                            spanName.style.color = m.color;
+                            spanName.style.fontWeight = 'bold';
+
+                            const spanBr = document.createElement('span');
+                            spanBr.innerHTML = '<br>';
+
+                            const spanText = document.createElement('span');
+                            spanText.textContent = m.text;
+
+                            p.appendChild(spanEmpty);
+                            p.appendChild(spanName);
+                            p.appendChild(spanBr);
+                            p.appendChild(spanText);
+                            gap.appendChild(p);
                         }
-                        msgContainer.appendChild(img);
-                        gap.appendChild(msgContainer);
 
-                        const p = document.createElement('p');
-                        p.style.color = 'rgb(221, 221, 221)';
-
-                        const spanEmpty = document.createElement('span');
-                        const spanName = document.createElement('span');
-                        spanName.textContent = m.name;
-                        spanName.style.color = m.color;
-                        spanName.style.fontWeight = 'bold';
-
-                        const spanBr = document.createElement('span');
-                        spanBr.innerHTML = '<br>';
-
-                        const spanText = document.createElement('span');
-                        spanText.textContent = m.text;
-
-                        p.appendChild(spanEmpty);
-                        p.appendChild(spanName);
-                        p.appendChild(spanBr);
-                        p.appendChild(spanText);
-                        gap.appendChild(p);
-
-                        const delBtn = document.createElement('button');
-                        delBtn.textContent = '✕';
-                        delBtn.style.cssText = `
-      position: absolute;
-      top: 5px;
-      right: 5px;
-      background: rgba(255, 50, 50, 0.8);
-      border: none;
-      color: white;
-      font-weight: bold;
-      padding: 2px 6px;
-      border-radius: 50%;
-      cursor: pointer;
-      display: none;
-      z-index: 9999;
-    `;
-                        delBtn.addEventListener('click', e => {
-                            e.stopPropagation();
-                            const hr = gap.previousElementSibling;
-                            if (hr && hr.tagName === 'HR') hr.remove();
-                            gap.remove();
-                        });
-
-                        gap.addEventListener('mouseover', () => delBtn.style.display = 'block');
-                        gap.addEventListener('mouseleave', () => delBtn.style.display = 'none');
-
-                        gap.appendChild(delBtn);
-
-                        const hr = document.createElement('hr');
-                        target.appendChild(hr);
                         target.appendChild(gap);
                     });
 
                     previewArea.innerHTML = '';
                     previewArea.appendChild(target);
-                    applyStyleToPreviewArea();
+
+                    // 편집 기능 추가
+                    previewArea.querySelectorAll('.gap span').forEach(span => {
+                        span.addEventListener('click', () => {
+                            span.setAttribute('contenteditable', 'true');
+                            span.focus();
+                        });
+                        span.addEventListener('blur', () => {
+                            span.removeAttribute('contenteditable');
+                        });
+                        span.addEventListener('keydown', (e) => {
+                            if (e.key === 'Enter') {
+                                if (e.shiftKey) {
+                                    // Shift+Enter: 줄바꿈 허용
+                                    return;
+                                } else {
+                                    // Enter만: 편집 완료
+                                    e.preventDefault();
+                                    span.blur();
+                                }
+                            }
+                        });
+                    });
                 }
 
      // ✱ 서술자 지정 기능
         // ✱ 서술자 지정 기능 (텍스트 유지)
 function applyNarratorMode(name) {
+  const removeItalic = document.getElementById('removeNarratorItalicCheckbox')?.checked;
+  const fontStyleValue = removeItalic ? 'normal' : 'italic';
+
   const divs = document.querySelectorAll('.gap');
   divs.forEach(div => {
     const nameSpan = div.querySelector('p span:nth-child(2)');
@@ -879,10 +1254,9 @@ function applyNarratorMode(name) {
       const originalText = textSpan ? textSpan.innerHTML : "";
 
       div.innerHTML = `
-        <p style="color: rgb(221, 221, 221); display: flow-root; font-style: italic; font-weight: bold; text-align: center; margin: 8px;">
+        <p style="color: rgb(221, 221, 221); display: flow-root; font-style: ${fontStyleValue}; font-weight: bold; text-align: center; margin: 8px;">
           <span></span> <span style="color: rgb(136, 136, 136);"></span><span></span><span>${originalText}</span>
         </p>
-        <button style="position: absolute; top: 5px; right: 5px; background: rgba(255, 50, 50, 0.8); border: none; color: white; font-weight: bold; padding: 2px 6px; border-radius: 50%; cursor: pointer; display: none; z-index: 9999;">✕</button>
       `;
       div.style.display = 'flow-root';
       div.style.backgroundColor = 'transparent';
@@ -896,48 +1270,6 @@ function applyNarratorMode(name) {
     function extractRoomId(input) {
         const match = input.match(/rooms\/([\w-]+)/);
         return match ? match[1] : input.trim();
-    } 
-    //저장시 삭제 버튼 제거
-    function removeDeleteButtonsBeforeExport() {
-            previewArea.querySelectorAll('.gap button').forEach(btn => {
-                if (btn.textContent === '✕') {
-                    btn.remove();
-                }
-            });
-        }
-    // 2. 삭제 버튼 다시 생성
-    function restoreDeleteButtonsAfterExport() {
-        document.querySelectorAll('.gap').forEach(gap => {
-            const delBtn = document.createElement('button');
-            delBtn.textContent = '✕';
-            delBtn.style.cssText = `
-      position: absolute;
-      top: 5px;
-      right: 5px;
-      background: rgba(255, 50, 50, 0.8);
-      border: none;
-      color: white;
-      font-weight: bold;
-      padding: 2px 6px;
-      border-radius: 50%;
-      cursor: pointer;
-      display: none;
-      z-index: 9999;
-    `;
-
-            delBtn.addEventListener('click', e => {
-                e.stopPropagation();
-                const hr = gap.previousElementSibling;
-                if (hr && hr.tagName === 'HR') hr.remove();
-                gap.remove();
-            });
-
-            gap.addEventListener('mouseover', () => delBtn.style.display = 'block');
-            gap.addEventListener('mouseleave', () => delBtn.style.display = 'none');
-
-            gap.appendChild(delBtn);
-            gap.style.position = 'relative';
-        });
     }
     </script>
 </body>
