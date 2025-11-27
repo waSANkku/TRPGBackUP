@@ -1011,7 +1011,6 @@
 
                             if (!json.nextPageToken) break;
                             pageToken = json.nextPageToken;
-                            if (page++ > 50) break; // 무한 루프 방지
                         }
 
                         if (allDocs.length === 0) {
