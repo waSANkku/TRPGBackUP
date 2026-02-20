@@ -16,7 +16,7 @@
 
         .container {
             display: flex;
-            height: 100vh;
+            height: 170vh;
         }
 
         .sidebar {
@@ -36,24 +36,24 @@
             color: #111827;
         }
 
-        .sidebar > p {
+        .sidebar>p {
             margin: 0;
             font-size: 12px;
             line-height: 1.6;
             color: #6b7280;
         }
 
-        .sidebar > p a {
+        .sidebar>p a {
             color: #2563eb;
             text-decoration: none;
             font-weight: 500;
         }
 
-        .sidebar > p a:hover {
+        .sidebar>p a:hover {
             text-decoration: underline;
         }
 
-        .sidebar > hr {
+        .sidebar>hr {
             margin: 8px 0 4px;
             border: 0;
             border-top: 1px solid #e5e7eb;
@@ -77,7 +77,6 @@
             background-color: #ffffff;
             color: #111827;
             transition: background-color 0.15s, border-color 0.15s, box-shadow 0.15s;
-            width: 100%;
         }
 
         button:hover {
@@ -89,10 +88,11 @@
         #channelFilter {
             margin-top: 8px;
             display: flex;
-            flex-wrap: nowrap !important;
+            flex-wrap: wrap;
             gap: 6px;
-            overflow-x: auto;
-            padding-bottom: 2px;
+            min-height: 40px;
+            align-items: flex-start;
+            align-content: flex-start;
         }
 
         #channelFilter button {
@@ -102,6 +102,9 @@
             padding: 4px 10px;
             font-size: 11px;
             color: #374151;
+            white-space: nowrap;
+            flex-shrink: 0;
+            min-width: fit-content;
         }
 
         #channelFilter button:hover {
@@ -165,8 +168,8 @@
         }
 
         .sidebar input[type="text"],
-        .sidebar input[type="number"] {
-            width: 100%;
+        .sidebar input[type="number"],
+        .sidebar input[type="color"] {
             padding: 6px 10px;
             border-radius: 8px;
             border: 1px solid #d1d5db;
@@ -174,6 +177,11 @@
             box-sizing: border-box;
             background-color: #ffffff;
             color: #111827;
+        }
+
+        .sidebar input[type="color"] {
+            height: 36px;
+            cursor: pointer;
         }
 
         .sidebar input[type="text"]::placeholder,
@@ -262,7 +270,6 @@
 
         .ccfolia_wrap {
             position: relative;
-            padding: 10px !important;
             background-color: #2c2c2cde;
             color: #fefefe;
         }
@@ -303,7 +310,7 @@
             border-top: 1px solid rgba(255, 255, 255, 0.08);
         }
 
-        hr{
+        hr {
             display: none;
         }
 
@@ -326,8 +333,24 @@
             line-height: 1;
         }
 
-        .preview .gap:hover {
+        .preview .gap:hover,
+        .preview .player.system:hover {
             outline: 1px solid rgba(255, 50, 50, 0.3);
+        }
+
+        /* 비밀 메시지 뱃지 */
+        .secret-badge {
+            display: inline-block;
+            background-color: #ffffff2b;
+            color: white;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: normal;
+            position: absolute;
+            right: 16px;
+            top: 8px;
+            z-index: 10;
         }
 
         /* Light theme overrides */
@@ -366,18 +389,23 @@
         .preview.light .player.system .Utext {
             color: #4b5563 !important;
         }
+
+        .preview.light .secret-badge {
+            background-color: #0000002b;
+            color: #111827;
+        }
     </style>
 </head>
 
 <body>
     <div class="container">
         <div class="sidebar">
-            <h2>껍질 미리-깐 코코포 로그 v1.0.1</h2>
+            <h2>껍질 미리-깐 코코포 로그 v1.0.2</h2>
             <p style="font-size:10pt;">
                 오류 발생시: @waSANkku로 DM
-                <br/>
+                <br />
                 업데이트 내역 <a href="https://wakku0201.tistory.com/135" target="_blank">바로가기</a>
-                <br/>
+                <br />
                 티스토리 비밀번호: waSANkku
                 <br />
                 <br />
@@ -404,17 +432,23 @@
                     서술자 이름:
                     <input type="text" id="narratorInput" placeholder="이름 정확히 입력" />
                 </label>
-                <label>
-                    <input type="checkbox" id="removeNarratorItalicCheckbox" /> 서술자 기울임 제거
+                <label style="flex-direction: row; align-items: center; gap: 6px;">
+                    <input type="checkbox" id="removeNarratorItalicCheckbox" style="width:auto;" /> 서술자 기울임 제거
                 </label>
+                <div id="narratorChannelSettings"></div>
             </div>
 
             <div id="tab-style" class="tab-panel hidden">
-                <label>
+                <label style="flex-direction: row; align-items: center; gap: 6px;">
                     패딩 (상하 px):
                     <input type="number" id="paddingInput" value="16" min="0" />
+                    폰트 크기 (px):
+                    <input type="number" id="fontSizeInput" value="16" min="8" max="32" />
                 </label>
-                <label>
+                <div id="channelColorSettings">
+                    <!-- 동적으로 채널별 색상 설정이 추가됩니다 -->
+                </div>
+                <label style="flex-direction: row; align-items: center; gap: 6px;">
                     <input type="checkbox" id="lightThemeToggle" /> 라이트 테마
                 </label>
             </div>
@@ -436,6 +470,7 @@
         const previewArea = document.getElementById('previewArea');
         const styleButton = document.getElementById('applyStyleBtn');
         const paddingInput = document.getElementById('paddingInput');
+        const fontSizeInput = document.getElementById('fontSizeInput');
 
         // 사이드바 탭 전환
         const sidebarTabs = document.querySelectorAll('.sidebar-tab');
@@ -464,17 +499,17 @@
 
         // 이벤트 위임 방식으로 변경
         document.addEventListener('mouseover', (e) => {
-            const gap = e.target.closest('.gap');
-            if (gap && previewArea.contains(gap)) {
-                currentHoverGap = gap;
-                const rect = gap.getBoundingClientRect();
+            const hovered = e.target.closest('.gap') || e.target.closest('.player.system');
+            if (hovered && previewArea.contains(hovered)) {
+                currentHoverGap = hovered;
+                const rect = hovered.getBoundingClientRect();
                 const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
                 const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
                 globalDeleteBtn.style.left = (rect.right - 30 + scrollLeft) + 'px';
                 globalDeleteBtn.style.top = (rect.top + 5 + scrollTop) + 'px';
                 globalDeleteBtn.style.display = 'block';
             } else if (!e.target.closest('#globalDeleteBtn')) {
-                // 버튼 위가 아니고 gap 위도 아니면 숨김
+                // 버튼 위가 아니고 대상 위도 아니면 숨김
                 if (currentHoverGap && !currentHoverGap.contains(e.target)) {
                     globalDeleteBtn.style.display = 'none';
                     currentHoverGap = null;
@@ -501,11 +536,48 @@
 
         // 라이트 테마 토글
         const lightThemeToggle = document.getElementById('lightThemeToggle');
+        
+        // 저장된 채널 색상을 저장할 변수
+        let savedChannelColors = {};
+        
         lightThemeToggle.addEventListener('change', () => {
             if (lightThemeToggle.checked) {
+                // 현재 채널 색상 저장
+                const channelSet = new Set(window.allMessages.map(m => m.channel));
+                channelSet.forEach(channel => {
+                    const colorInput = document.getElementById(`channelColor_${channel}`);
+                    if (colorInput) {
+                        savedChannelColors[channel] = colorInput.value;
+                    }
+                });
+                
+                // 라이트 테마 색상으로 변경
+                channelSet.forEach(channel => {
+                    const colorInput = document.getElementById(`channelColor_${channel}`);
+                    if (colorInput) {
+                        // 메인 채널은 #f1f1f1, 이외는 #E3E3E3
+                        const lightColor = (channel.includes('메인') || channel.includes('main')) ? '#f1f1f1' : '#E3E3E3';
+                        colorInput.value = lightColor;
+                    }
+                });
+                
                 previewArea.classList.add('light');
             } else {
+                // 저장된 원래 색상 복원
+                const channelSet = new Set(window.allMessages.map(m => m.channel));
+                channelSet.forEach(channel => {
+                    const colorInput = document.getElementById(`channelColor_${channel}`);
+                    if (colorInput && savedChannelColors[channel]) {
+                        colorInput.value = savedChannelColors[channel];
+                    }
+                });
+                
                 previewArea.classList.remove('light');
+            }
+            
+            // 메시지 다시 렌더링
+            if (window.allMessages && window.allMessages.length > 0) {
+                renderMessages();
             }
         });
 
@@ -638,7 +710,6 @@
 
     .ccfolia_wrap {
     position: relative;
-    padding: 10px !important;
     background-color: #2c2c2cde;
     color: #fefefe;
     }
@@ -681,6 +752,24 @@
 
         hr{
             display: none;
+        }
+
+        .secret-badge {
+            display: inline-block;
+            background-color: #ffffff2b;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: normal;
+            position: absolute;
+            right: 16px;
+            top: 8px;
+            z-index: 10;
+        }
+
+        .ccfolia_wrap.light .secret-badge {
+            background-color: #0000002b;
+            color: #111827;
         }
 
         /* Light theme overrides */
@@ -784,7 +873,6 @@
 
     .ccfolia_wrap {
     position: relative;
-    padding: 10px !important;
     background-color: #2c2c2cde;
     color: #fefefe;
     }
@@ -827,6 +915,24 @@
 
         hr{
             display: none;
+        }
+
+        .secret-badge {
+            display: inline-block;
+            background-color: #ffffff2b;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: normal;
+            position: absolute;
+            right: 16px;
+            top: 8px;
+            z-index: 10;
+        }
+
+        .ccfolia_wrap.light .secret-badge {
+            background-color: #0000002b;
+            color: #111827;
         }
 
         /* Light theme overrides */
@@ -885,268 +991,280 @@
             a.click();
             URL.revokeObjectURL(url);
         });
-    
-    
 
-            async function loadFirestoreMessages() {
-                const roomId = document.getElementById('roomInput').value.trim();
-                if (!roomId) return alert('룸 ID를 입력해주세요.');
 
-                const url = `https://firestore.googleapis.com/v1/projects/ccfolia-160aa/databases/(default)/documents/rooms/${roomId}/messages/?pageSize=1000`;
 
-                try {
-                    const res = await fetch(url);
-                    const json = await res.json();
-                    if (!json.documents) {
-                        previewArea.innerHTML = '<p style="color:red;">메시지를 불러올 수 없습니다.</p>';
-                        return;
-                    }
+        async function loadFirestoreMessages() {
+            const roomId = document.getElementById('roomInput').value.trim();
+            if (!roomId) return alert('룸 ID를 입력해주세요.');
 
-                    allMessages = json.documents.map(doc => {
-                        const f = doc.fields;
-                        return {
-                            name: f.name?.stringValue ?? "이름 없음",
-                            text: f.text?.stringValue ?? "",
-                            icon: f.iconUrl?.stringValue ?? "",
-                            color: f.color?.stringValue ?? "#ccc",
-                            channel: f.channelName?.stringValue ?? "기타"
-                        };
-                    });
+            const url = `https://firestore.googleapis.com/v1/projects/ccfolia-160aa/databases/(default)/documents/rooms/${roomId}/messages/?pageSize=1000`;
 
-                    renderChannelFilter();
-                    renderMessages(); // 전체 표시
-                } catch (e) {
-                    console.error(e);
-                    previewArea.innerHTML = `<p style="color:red;">에러: ${e.message}</p>`;
+            try {
+                const res = await fetch(url);
+                const json = await res.json();
+                if (!json.documents) {
+                    previewArea.innerHTML = '<p style="color:red;">메시지를 불러올 수 없습니다.</p>';
+                    return;
                 }
+
+                allMessages = json.documents.map(doc => {
+                    const f = doc.fields;
+                    return {
+                        name: f.name?.stringValue ?? "이름 없음",
+                        text: f.text?.stringValue ?? "",
+                        icon: f.iconUrl?.stringValue ?? "",
+                        color: f.color?.stringValue ?? "#ccc",
+                        channel: f.channelName?.stringValue ?? "기타"
+                    };
+                });
+
+                renderChannelFilter();
+                renderMessages(); // 전체 표시
+            } catch (e) {
+                console.error(e);
+                previewArea.innerHTML = `<p style="color:red;">에러: ${e.message}</p>`;
             }
+        }
 
-            function renderChannelFilter() {
-                const channelSet = new Set(allMessages.map(m => m.channel));
-                const html = ['<button onclick="renderMessages(null)">전체</button>']
-                    .concat([...channelSet].map(ch =>
-                        `<button onclick="renderMessages('${ch}')">${ch}</button>`))
-                    .join('');
-                document.getElementById('channelFilter').innerHTML = html;
-            }
+        function renderChannelFilter() {
+            const channelSet = new Set(allMessages.map(m => m.channel));
+            const html = ['<button onclick="renderMessages(null)">전체</button>']
+                .concat([...channelSet].map(ch =>
+                    `<button onclick="renderMessages('${ch}')">${ch}</button>`))
+                .join('');
+            document.getElementById('channelFilter').innerHTML = html;
+        }
 
-            function renderMessages(filterChannel = null) {
-                const target = document.createElement('div');
-                target.className = 'ccfolia_wrap';
+        function renderMessages(filterChannel = null) {
+            const target = document.createElement('div');
+            target.className = 'ccfolia_wrap';
 
-                const filtered = filterChannel
-                    ? allMessages.filter(m => m.channel === filterChannel)
-                    : allMessages;
+            const filtered = filterChannel
+                ? allMessages.filter(m => m.channel === filterChannel)
+                : allMessages;
 
-                filtered.forEach(m => {
-                    const gap = document.createElement('div');
-                    gap.className = 'gap';
+            filtered.forEach(m => {
+                const gap = document.createElement('div');
+                gap.className = 'gap';
 
-                    const iconHTML = m.icon
-                        ? `<div class="msg_container"><img src="${m.icon}" alt="icon"></div>`
-                        : '';
+                const iconHTML = m.icon
+                    ? `<div class="msg_container"><img src="${m.icon}" alt="icon"></div>`
+                    : '';
 
-                    const messageHTML = `
+                const messageHTML = `
       ${iconHTML}
       <div>
         <span style="color:${m.color}; font-weight:bold;">${m.name}</span><br/>
         <span>${m.text}</span>
       </div>
     `;
-                    gap.innerHTML = messageHTML;
+                gap.innerHTML = messageHTML;
 
-                    const hr = document.createElement('hr');
-                     // 명시적 스타일 지정
-                    hr.style.margin = '0px';
-                    hr.style.padding = '0px';
-                    hr.style.borderWidth = '1px 0px 0px';
-                    hr.style.flexShrink = '0';
-                    hr.style.borderTopStyle = 'solid';
-                    hr.style.borderTopColor = 'rgba(255, 255, 255, 0.08)';
-                    hr.style.display = 'block';
-                    target.appendChild(hr);
-                    target.appendChild(gap);
+                const hr = document.createElement('hr');
+                // 명시적 스타일 지정
+                hr.style.margin = '0px';
+                hr.style.padding = '0px';
+                hr.style.borderWidth = '1px 0px 0px';
+                hr.style.flexShrink = '0';
+                hr.style.borderTopStyle = 'solid';
+                hr.style.borderTopColor = 'rgba(255, 255, 255, 0.08)';
+                hr.style.display = 'block';
+                target.appendChild(hr);
+                target.appendChild(gap);
+            });
+
+            previewArea.innerHTML = '';
+            previewArea.appendChild(target);
+            applyStyleToPreviewArea();
+
+        }
+
+
+        window.allMessages = [];
+        window.selectedChannels = new Set();
+
+        async function loadFirestoreMessages() {
+            const rawInput = document.getElementById('roomInput').value.trim();
+            const roomId = extractRoomId(rawInput);
+            if (!roomId) return alert('룸 ID를 입력해주세요.');
+
+            const baseUrl = `https://firestore.googleapis.com/v1/projects/ccfolia-160aa/databases/(default)/documents/rooms/${roomId}/messages`;
+
+            let allDocs = [];
+            let pageToken = null;
+            let page = 1;
+
+            // 진행 상황 표시 영역
+            previewArea.innerHTML = '<p style="color:#888;padding:20px;">메시지를 불러오는 중...</p>';
+
+            try {
+                while (true) {
+                    const url = new URL(baseUrl);
+                    url.searchParams.set('pageSize', '1000');
+                    if (pageToken) {
+                        url.searchParams.set('pageToken', pageToken);
+                    }
+
+                    const res = await fetch(url.toString());
+                    const json = await res.json();
+
+                    if (json.documents) {
+                        allDocs = allDocs.concat(json.documents);
+                        // 진행 상황 업데이트
+                        previewArea.innerHTML = `<p style="color:#888;padding:20px;">페이지 ${page} 로딩 중... (${allDocs.length}개 메시지)</p>`;
+                    }
+
+                    if (!json.nextPageToken) break;
+                    pageToken = json.nextPageToken;
+                }
+
+                if (allDocs.length === 0) {
+                    previewArea.innerHTML = '<p style="color:red;">메시지를 불러올 수 없습니다.</p>';
+                    return;
+                }
+
+                const sorted = allDocs.sort((a, b) => {
+                    const aTime = a.fields.createdAt?.timestampValue || '';
+                    const bTime = b.fields.createdAt?.timestampValue || '';
+                    return new Date(aTime) - new Date(bTime); // 오래된 → 최신
                 });
 
-                previewArea.innerHTML = '';
-                previewArea.appendChild(target);
-                applyStyleToPreviewArea();
-                
+                window.allMessages = sorted.map(doc => {
+                    const f = doc.fields;
+
+                    // 주사위 결과 추출 시도
+                    let rollResult = "";
+                    try {
+                        rollResult = f.extend?.mapValue?.fields?.roll?.mapValue?.fields?.result?.stringValue || "";
+                    } catch (e) {
+                        rollResult = "";
+                    }
+
+                    // 채널명 정규화: "メイン"을 "메인"으로 통일
+                    let channelName = f.channelName?.stringValue ?? "기타";
+                    if (channelName === "メイン") {
+                        channelName = "메인";
+                    }
+
+                    // 포트레이트 우선순위: extend.portrait.url > iconUrl
+                    let iconUrl = "";
+                    try {
+                        iconUrl = f.extend?.mapValue?.fields?.portrait?.mapValue?.fields?.url?.stringValue
+                            || f.iconUrl?.stringValue
+                            || "";
+                    } catch (e) {
+                        iconUrl = f.iconUrl?.stringValue ?? "";
+                    }
+
+                    return {
+                        name: f.name?.stringValue ?? "이름 없음",
+                        text: f.text?.stringValue + (rollResult ? ` > ${rollResult}` : "") ?? "",
+                        icon: iconUrl,
+                        color: f.color?.stringValue ?? "#ccc",
+                        channel: channelName
+                    };
+                });
+
+                // 초기 로딩 시 메인 채널만 선택
+                window.selectedChannels = new Set(["메인"]);
+                renderChannelFilter();
+                createChannelColorSettings();
+                renderMessages();
+
+            } catch (e) {
+                console.error(e);
+                previewArea.innerHTML = `<p style="color:red;">에러 발생: ${e.message}</p>`;
+            }
+        }
+
+        function renderChannelFilter() {
+            const channelSet = new Set(window.allMessages.map(m => m.channel));
+            const filterDiv = document.getElementById('channelFilter');
+            filterDiv.innerHTML = '';
+
+            // 전체 버튼
+            const allBtn = document.createElement('button');
+            allBtn.textContent = '전체';
+            allBtn.onclick = () => toggleAllChannels();
+            if (window.selectedChannels.size === 0) {
+                allBtn.classList.add('active');
+            }
+            filterDiv.appendChild(allBtn);
+
+            // 각 채널 버튼
+            [...channelSet].forEach(ch => {
+                const btn = document.createElement('button');
+                btn.textContent = ch;
+                btn.onclick = () => toggleChannel(ch);
+                if (window.selectedChannels.has(ch)) {
+                    btn.classList.add('active');
+                }
+                filterDiv.appendChild(btn);
+            });
+        }
+
+        function toggleAllChannels() {
+            if (window.selectedChannels.size === 0) {
+                // 이미 전체가 선택되어 있으면 아무것도 안함
+                return;
+            }
+            window.selectedChannels.clear();
+            renderChannelFilter();
+            renderMessages();
+        }
+
+        function toggleChannel(channel) {
+            if (window.selectedChannels.has(channel)) {
+                window.selectedChannels.delete(channel);
+            } else {
+                window.selectedChannels.add(channel);
+            }
+            renderChannelFilter();
+            renderMessages();
+        }
+
+        function renderMessages() {
+            const target = document.createElement('div');
+            target.className = 'ccfolia_wrap';
+
+            // 선택된 채널이 없으면 전체 표시
+            const filtered = window.selectedChannels.size === 0
+                ? window.allMessages
+                : window.allMessages.filter(m => window.selectedChannels.has(m.channel));
+
+            const narratorName = document.getElementById('narratorInput')?.value?.trim();
+            const removeItalic = document.getElementById('removeNarratorItalicCheckbox')?.checked;
+            const paddingValue = paddingInput.value || "16";
+            const fontSizeValue = fontSizeInput.value || "16";
+
+            // 메인 컨테이너 배경색 설정 (첫 번째 메시지의 채널 색상 사용)
+            if (filtered.length > 0) {
+                const firstChannel = filtered[0].channel;
+                const mainColor = document.getElementById(`channelColor_${firstChannel}`)?.value || '#1f1e22';
+                target.style.backgroundColor = mainColor;
             }
 
+            filtered.forEach(m => {
+                // 동적 채널별 배경색 가져오기
+                const channelColorInput = document.getElementById(`channelColor_${m.channel}`);
+                const channelBackgroundColor = channelColorInput ? channelColorInput.value : '#1f1e22';
 
-            window.allMessages = [];
-            window.selectedChannels = new Set();
-
-                async function loadFirestoreMessages() {
-                    const rawInput = document.getElementById('roomInput').value.trim();
-                    const roomId = extractRoomId(rawInput);
-                    if (!roomId) return alert('룸 ID를 입력해주세요.');
-
-                    const baseUrl = `https://firestore.googleapis.com/v1/projects/ccfolia-160aa/databases/(default)/documents/rooms/${roomId}/messages`;
-
-                    let allDocs = [];
-                    let pageToken = null;
-                    let page = 1;
-
-                    // 진행 상황 표시 영역
-                    previewArea.innerHTML = '<p style="color:#888;padding:20px;">메시지를 불러오는 중...</p>';
-
-                    try {
-                        while (true) {
-                            const url = new URL(baseUrl);
-                            url.searchParams.set('pageSize', '1000');
-                            if (pageToken) {
-                                url.searchParams.set('pageToken', pageToken);
-                            }
-
-                            const res = await fetch(url.toString());
-                            const json = await res.json();
-
-                            if (json.documents) {
-                                allDocs = allDocs.concat(json.documents);
-                                // 진행 상황 업데이트
-                                previewArea.innerHTML = `<p style="color:#888;padding:20px;">페이지 ${page} 로딩 중... (${allDocs.length}개 메시지)</p>`;
-                            }
-
-                            if (!json.nextPageToken) break;
-                            pageToken = json.nextPageToken;
-                        }
-
-                        if (allDocs.length === 0) {
-                            previewArea.innerHTML = '<p style="color:red;">메시지를 불러올 수 없습니다.</p>';
-                            return;
-                        }
-
-                        const sorted = allDocs.sort((a, b) => {
-                            const aTime = a.fields.createdAt?.timestampValue || '';
-                            const bTime = b.fields.createdAt?.timestampValue || '';
-                            return new Date(aTime) - new Date(bTime); // 오래된 → 최신
-                        });
-
-                        window.allMessages = sorted.map(doc => {
-                            const f = doc.fields;
-
-                            // 주사위 결과 추출 시도
-                            let rollResult = "";
-                            try {
-                                rollResult = f.extend?.mapValue?.fields?.roll?.mapValue?.fields?.result?.stringValue || "";
-                            } catch (e) {
-                                rollResult = "";
-                            }
-
-                            // 채널명 정규화: "メイン"을 "메인"으로 통일
-                            let channelName = f.channelName?.stringValue ?? "기타";
-                            if (channelName === "メイン") {
-                                channelName = "메인";
-                            }
-
-                            // 포트레이트 우선순위: extend.portrait.url > iconUrl
-                            let iconUrl = "";
-                            try {
-                                iconUrl = f.extend?.mapValue?.fields?.portrait?.mapValue?.fields?.url?.stringValue
-                                       || f.iconUrl?.stringValue
-                                       || "";
-                            } catch (e) {
-                                iconUrl = f.iconUrl?.stringValue ?? "";
-                            }
-
-                            return {
-                                name: f.name?.stringValue ?? "이름 없음",
-                                text: f.text?.stringValue + (rollResult ? ` > ${rollResult}` : "") ?? "",
-                                icon: iconUrl,
-                                color: f.color?.stringValue ?? "#ccc",
-                                channel: channelName
-                            };
-                        });
-
-                        // 초기 로딩 시 메인 채널만 선택
-                        window.selectedChannels = new Set(["메인"]);
-                        renderChannelFilter();
-                        renderMessages();
-
-                    } catch (e) {
-                        console.error(e);
-                        previewArea.innerHTML = `<p style="color:red;">에러 발생: ${e.message}</p>`;
-                    }
-                }
-
-                function renderChannelFilter() {
-                    const channelSet = new Set(window.allMessages.map(m => m.channel));
-                    const filterDiv = document.getElementById('channelFilter');
-                    filterDiv.innerHTML = '';
-
-                    // 전체 버튼
-                    const allBtn = document.createElement('button');
-                    allBtn.textContent = '전체';
-                    allBtn.onclick = () => toggleAllChannels();
-                    if (window.selectedChannels.size === 0) {
-                        allBtn.classList.add('active');
-                    }
-                    filterDiv.appendChild(allBtn);
-
-                    // 각 채널 버튼
-                    [...channelSet].forEach(ch => {
-                        const btn = document.createElement('button');
-                        btn.textContent = ch;
-                        btn.onclick = () => toggleChannel(ch);
-                        if (window.selectedChannels.has(ch)) {
-                            btn.classList.add('active');
-                        }
-                        filterDiv.appendChild(btn);
-                    });
-                }
-
-                function toggleAllChannels() {
-                    if (window.selectedChannels.size === 0) {
-                        // 이미 전체가 선택되어 있으면 아무것도 안함
-                        return;
-                    }
-                    window.selectedChannels.clear();
-                    renderChannelFilter();
-                    renderMessages();
-                }
-
-                function toggleChannel(channel) {
-                    if (window.selectedChannels.has(channel)) {
-                        window.selectedChannels.delete(channel);
-                    } else {
-                        window.selectedChannels.add(channel);
-                    }
-                    renderChannelFilter();
-                    renderMessages();
-                }
-
-                function renderMessages() {
-                    const target = document.createElement('div');
-                    target.className = 'ccfolia_wrap';
-                    target.style.backgroundColor = '#1f1e22';
-
-                    // 선택된 채널이 없으면 전체 표시
-                    const filtered = window.selectedChannels.size === 0
-                        ? window.allMessages
-                        : window.allMessages.filter(m => window.selectedChannels.has(m.channel));
-
-                    const narratorName = document.getElementById('narratorInput')?.value?.trim();
-                    const removeItalic = document.getElementById('removeNarratorItalicCheckbox')?.checked;
-                    const paddingValue = paddingInput.value || "16";
-
-                    filtered.forEach(m => {
-                        // SYSTEM 메시지 처리
-                        if (m.name.toLowerCase() === 'system') {
-                            const systemDiv = document.createElement('div');
-                            systemDiv.className = 'player system';
-                            systemDiv.style.cssText = `
+                // SYSTEM 메시지 처리
+                if (m.name.toLowerCase() === 'system') {
+                    const systemDiv = document.createElement('div');
+                    systemDiv.className = 'player system';
+                    systemDiv.style.cssText = `
                                 display: flex;
                                 overflow: hidden;
                                 padding: 0px;
                                 border-top: 1px solid rgba(255, 255, 255, 0.08);
-                                background: #33313b;
+                                background: ${channelBackgroundColor};
                                 text-align: center;
                                 justify-content: center;
                             `;
 
-                            systemDiv.innerHTML = `
+                    systemDiv.innerHTML = `
                                 <div class="infoWrap" style="display: none">
                                     <div class="imgWrap" style="width: 40px;height: 40px;overflow: hidden;background-color: rgba(0, 0, 0, 0.31);float: left;border-radius: 5px"></div>
                                 </div>
@@ -1155,129 +1273,307 @@
                                     <p class="Utext" style="margin: 0;font-weight: 400;color: #908e9a;font-size: 15px;letter-spacing: -1px">${m.text}</p>
                                 </div>
                             `;
-                            target.appendChild(systemDiv);
-                            return;
-                        }
-
-                        const gap = document.createElement('div');
-                        gap.className = 'gap';
-
-                        // 서술자 모드인지 확인
-                        const isNarrator = narratorName && m.name === narratorName;
-
-                        if (isNarrator) {
-                            // 서술자 스타일
-                            const fontStyleValue = removeItalic ? 'normal' : 'italic';
-                            gap.style.cssText = 'display: flow-root; background-color: transparent; position: relative; padding: 2px 16px;';
-
-                            const p = document.createElement('p');
-                            p.style.cssText = `color: rgb(221, 221, 221); display: flow-root; font-style: ${fontStyleValue}; font-weight: bold; text-align: center; margin: 8px;`;
-
-                            const spanText = document.createElement('span');
-                            spanText.textContent = m.text;
-                            p.appendChild(spanText);
-                            gap.appendChild(p);
-                        } else {
-                            // 일반 메시지 스타일
-                            gap.style.cssText = `display: flex; background-color: transparent; position: relative; padding: ${paddingValue}px 16px;`;
-
-                            const msgContainer = document.createElement('div');
-                            msgContainer.className = 'msg_container';
-
-                            const img = document.createElement('img');
-                            img.src = m.icon;
-                            img.alt = m.name;
-                            if(m.icon){
-                                img.style.cssText = 'width: 40px; height: 40px; object-fit: cover; object-position: top center; border-radius: 5px;';
-                            } else {
-                                img.style.cssText = 'width: 0px; height: 40px; object-fit: cover; object-position: top center; border-radius: 5px;';
-                            }
-                            msgContainer.appendChild(img);
-                            gap.appendChild(msgContainer);
-
-                            const p = document.createElement('p');
-                            p.style.color = 'rgb(221, 221, 221)';
-
-                            const spanEmpty = document.createElement('span');
-                            const spanName = document.createElement('span');
-                            spanName.textContent = m.name;
-                            spanName.style.color = m.color;
-                            spanName.style.fontWeight = 'bold';
-
-                            const spanBr = document.createElement('span');
-                            spanBr.innerHTML = '<br>';
-
-                            const spanText = document.createElement('span');
-                            spanText.textContent = m.text;
-
-                            p.appendChild(spanEmpty);
-                            p.appendChild(spanName);
-                            p.appendChild(spanBr);
-                            p.appendChild(spanText);
-                            gap.appendChild(p);
-                        }
-
-                        target.appendChild(gap);
-                    });
-
-                    previewArea.innerHTML = '';
-                    previewArea.appendChild(target);
-
-                    // 편집 기능 추가
-                    previewArea.querySelectorAll('.gap span').forEach(span => {
-                        span.addEventListener('click', () => {
-                            span.setAttribute('contenteditable', 'true');
-                            span.focus();
-                        });
-                        span.addEventListener('blur', () => {
-                            span.removeAttribute('contenteditable');
-                        });
-                        span.addEventListener('keydown', (e) => {
-                            if (e.key === 'Enter') {
-                                if (e.shiftKey) {
-                                    // Shift+Enter: 줄바꿈 허용
-                                    return;
-                                } else {
-                                    // Enter만: 편집 완료
-                                    e.preventDefault();
-                                    span.blur();
-                                }
-                            }
-                        });
-                    });
+                    target.appendChild(systemDiv);
+                    return;
                 }
 
-     // ✱ 서술자 지정 기능
+                const gap = document.createElement('div');
+                gap.className = 'gap';
+
+                // 서술자 모드인지 확인 (비밀 채널은 제외)
+                const narratorChannelEnabled = document.getElementById(`channelNarrator_${m.channel}`)?.checked ?? false;
+                const isNarrator = narratorName && m.name === narratorName && narratorChannelEnabled;
+
+                if (isNarrator) {
+                    // 서술자 스타일
+                    const fontStyleValue = removeItalic ? 'normal' : 'italic';
+                    gap.style.cssText = `display: flow-root; background-color: ${channelBackgroundColor}; position: relative; padding: 2px 16px;`;
+
+                    const p = document.createElement('p');
+                    p.style.cssText = `color: rgb(221, 221, 221); display: flow-root; font-style: ${fontStyleValue}; font-weight: bold; text-align: center; margin: 7px !important;`;
+
+                    const spanText = document.createElement('span');
+                    spanText.textContent = m.text;
+                    spanText.style.fontSize = `${fontSizeValue}px`;
+                    p.appendChild(spanText);
+                    gap.appendChild(p);
+                } else {
+                    // 일반 메시지 스타일
+                    gap.style.cssText = `display: flex; background-color: ${channelBackgroundColor}; position: relative; padding: ${paddingValue}px 16px;`;
+
+                    const msgContainer = document.createElement('div');
+                    msgContainer.className = 'msg_container';
+
+                    const img = document.createElement('img');
+                    img.src = m.icon;
+                    img.alt = m.name;
+                    if (m.icon) {
+                        img.style.cssText = 'width: 40px; height: 40px; object-fit: cover; object-position: top center; border-radius: 5px;';
+                    } else {
+                        img.style.cssText = 'width: 0px; height: 40px; object-fit: cover; object-position: top center; border-radius: 5px;';
+                    }
+                    msgContainer.appendChild(img);
+                    gap.appendChild(msgContainer);
+
+                    const p = document.createElement('p');
+                    p.style.color = 'rgb(221, 221, 221)';
+
+                    const spanEmpty = document.createElement('span');
+                    const spanName = document.createElement('span');
+                    spanName.textContent = m.name;
+                    spanName.style.color = m.color;
+                    spanName.style.fontWeight = 'bold';
+                    spanName.style.fontSize = `${fontSizeValue}px`;
+
+                    const spanBr = document.createElement('span');
+                    spanBr.innerHTML = '<br>';
+
+                    const spanText = document.createElement('span');
+                    spanText.textContent = m.text;
+                    spanText.style.fontSize = `${fontSizeValue}px`;
+
+                    p.appendChild(spanEmpty);
+                    p.appendChild(spanName);
+                    p.appendChild(spanBr);
+                    p.appendChild(spanText);
+                    gap.appendChild(p);
+
+                    // 비밀 채널 메시지에 (비밀) 뱃지 추가
+                    // 더 유연한 채널명 매칭 (공백 제거, 대소문자 무시)
+                    const normalizedChannel = m.channel.replace(/\s+/g, '').toLowerCase();
+                    if (normalizedChannel === '비밀' || normalizedChannel === 'secret' || m.channel.includes('비밀')) {
+                        const secretBadge = document.createElement('span');
+                        secretBadge.className = 'secret-badge';
+                        secretBadge.textContent = '귓속말';
+                        secretBadge.style.fontSize = `${parseInt(fontSizeValue)-3}px`;
+                        gap.appendChild(secretBadge);
+                    }
+                    // 채널 뱃지 체크박스가 체크된 경우 뱃지 추가
+                    const badgeCheckbox = document.getElementById(`channelBadge_${m.channel}`);
+                    if (badgeCheckbox && badgeCheckbox.checked) {
+                        const channelBadge = document.createElement('span');
+                        channelBadge.className = 'secret-badge';
+                        channelBadge.textContent = badgeCheckbox.dataset.badgeText || m.channel;
+                        channelBadge.style.fontSize = `${parseInt(fontSizeValue) - 3}px`;
+                        gap.appendChild(channelBadge);
+                    }
+                }
+
+                target.appendChild(gap);
+            });
+
+            previewArea.innerHTML = '';
+            previewArea.appendChild(target);
+
+            // 편집 기능 추가
+            previewArea.querySelectorAll('.gap span').forEach(span => {
+                span.addEventListener('click', () => {
+                    span.setAttribute('contenteditable', 'true');
+                    span.focus();
+                });
+                span.addEventListener('blur', () => {
+                    span.removeAttribute('contenteditable');
+                });
+                span.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        if (e.shiftKey) {
+                            // Shift+Enter: 줄바꿈 허용
+                            return;
+                        } else {
+                            // Enter만: 편집 완료
+                            e.preventDefault();
+                            span.blur();
+                        }
+                    }
+                });
+            });
+        }
+
+        // ✱ 서술자 지정 기능
         // ✱ 서술자 지정 기능 (텍스트 유지)
-function applyNarratorMode(name) {
-  const removeItalic = document.getElementById('removeNarratorItalicCheckbox')?.checked;
-  const fontStyleValue = removeItalic ? 'normal' : 'italic';
+        function applyNarratorMode(name) {
+            const removeItalic = document.getElementById('removeNarratorItalicCheckbox')?.checked;
+            const fontStyleValue = removeItalic ? 'normal' : 'italic';
 
-  const divs = document.querySelectorAll('.gap');
-  divs.forEach(div => {
-    const nameSpan = div.querySelector('p span:nth-child(2)');
-    const textSpan = div.querySelector('p span:last-child');
-    if (nameSpan && nameSpan.textContent.trim() === name) {
-      const originalText = textSpan ? textSpan.innerHTML : "";
+            const divs = document.querySelectorAll('.gap');
+            divs.forEach(div => {
+                const nameSpan = div.querySelector('p span:nth-child(2)');
+                const textSpan = div.querySelector('p span:last-child');
+                if (nameSpan && nameSpan.textContent.trim() === name) {
+                    const originalText = textSpan ? textSpan.innerHTML : "";
 
-      div.innerHTML = `
+                    div.innerHTML = `
         <p style="color: rgb(221, 221, 221); display: flow-root; font-style: ${fontStyleValue}; font-weight: bold; text-align: center; margin: 8px;">
           <span></span> <span style="color: rgb(136, 136, 136);"></span><span></span><span>${originalText}</span>
         </p>
       `;
-      div.style.display = 'flow-root';
-      div.style.backgroundColor = 'transparent';
-      div.style.padding = '2px 16px';
-    }
-  });
-}
+                    div.style.display = 'flow-root';
+                    div.style.backgroundColor = 'transparent';
+                    div.style.padding = '2px 16px';
+                }
+            });
+        }
 
 
-    // ✱ Firestore 메시지 불러오기 시 주소에서 ID 추출
-    function extractRoomId(input) {
-        const match = input.match(/rooms\/([\w-]+)/);
-        return match ? match[1] : input.trim();
-    }
+        // 채널별 색상 설정 생성
+        function createChannelColorSettings() {
+            const channelSet = new Set(window.allMessages.map(m => m.channel));
+            const container = document.getElementById('channelColorSettings');
+            container.innerHTML = '';
+
+            // 기본 색상 설정
+            const defaultColors = {
+                '메인': '#1f1e22',
+                '비밀': '#3d3d3d',
+                '사담': '#3d3d3d',
+                '기타': '#3d3d3d',
+                'info': '#3d3d3d',
+                '정보': '#3d3d3d'
+            };
+
+            channelSet.forEach(channel => {
+                // 채널명에 특정 키워드가 포함된 경우 해당 색상 적용
+                let colorKey = '기타'; // 기본값
+                let badgeLabel = null;
+                if (channel.includes('메인') || channel.includes('main')) {
+                    colorKey = '메인';
+                    badgeLabel = '메인';
+                } else if (channel.includes('비밀')) {
+                    colorKey = '비밀';
+                    // 비밀은 귓속말 뱃지 자동 표시, 체크박스 불필요
+                } else if (channel.includes('사담') || channel.includes('other')) {
+                    colorKey = '사담';
+                    badgeLabel = '사담';
+                } else if (channel.includes('info') || channel.includes('정보')) {
+                    colorKey = 'info';
+                    badgeLabel = '정보';
+                } else {
+                    badgeLabel = channel;
+                }
+
+                const label = document.createElement('label');
+                label.style.cssText = 'flex-direction: row; align-items: center; gap: 6px;';
+
+                const badgeCheckboxHTML = badgeLabel !== null
+                    ? `뱃지<input type="checkbox" id="channelBadge_${channel}" data-badge-text="${badgeLabel}" style="width:auto;" />`
+                    : '';
+
+                label.innerHTML = `
+                    ${channel}:
+                    <input type="color" id="channelColor_${channel}" value="${defaultColors[colorKey]}" />
+                    ${badgeCheckboxHTML}
+                `;
+                container.appendChild(label);
+            });
+
+            // 서술자 탭에 채널별 서술자 on/off 체크박스 추가
+            const narratorContainer = document.getElementById('narratorChannelSettings');
+            if (narratorContainer) {
+                narratorContainer.innerHTML = '';
+                const title = document.createElement('small');
+                title.textContent = '채널별 서술자 적용';
+                title.style.cssText = 'color: #6b7280; font-size: 11px; margin-bottom: 2px;';
+                narratorContainer.appendChild(title);
+
+                channelSet.forEach(channel => {
+                    const isMainChannel = channel.includes('메인') || channel.includes('main');
+                    const narratorLabel = document.createElement('label');
+                    narratorLabel.style.cssText = 'flex-direction: row; align-items: center; gap: 6px;';
+                    narratorLabel.innerHTML = `
+                        <input type="checkbox" id="channelNarrator_${channel}" style="width:auto;" ${isMainChannel ? 'checked' : ''} />
+                        ${channel}
+                    `;
+                    narratorContainer.appendChild(narratorLabel);
+                });
+            }
+
+            // 저장된 채널 설정 복원 후, 변경 시 자동 저장 리스너 등록
+            restoreChannelSettings();
+            channelSet.forEach(channel => {
+                [`channelColor_${channel}`, `channelBadge_${channel}`, `channelNarrator_${channel}`].forEach(id => {
+                    document.getElementById(id)?.addEventListener('change', saveChannelSettings);
+                });
+            });
+        }
+
+        // Firestore 메시지 불러오기 시 주소에서 ID 추출
+        function extractRoomId(input) {
+            const match = input.match(/rooms\/([\w-]+)/);
+            return match ? match[1] : input.trim();
+        }
+
+        // ─── 설정 저장/불러오기 (localStorage) ───────────────────────────
+        const SETTINGS_KEY = 'ccfolia_settings';
+        const CHANNEL_SETTINGS_KEY = 'ccfolia_channel_settings';
+
+        function saveSettings() {
+            const s = {
+                narratorName: document.getElementById('narratorInput')?.value ?? '',
+                removeItalic: document.getElementById('removeNarratorItalicCheckbox')?.checked ?? false,
+                padding: document.getElementById('paddingInput')?.value ?? '16',
+                fontSize: document.getElementById('fontSizeInput')?.value ?? '16',
+                lightTheme: document.getElementById('lightThemeToggle')?.checked ?? false,
+            };
+            localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
+        }
+
+        function loadSettings() {
+            const raw = localStorage.getItem(SETTINGS_KEY);
+            if (!raw) return;
+            try {
+                const s = JSON.parse(raw);
+                if (s.narratorName != null) document.getElementById('narratorInput').value = s.narratorName;
+                document.getElementById('removeNarratorItalicCheckbox').checked = s.removeItalic ?? false;
+                if (s.padding != null) document.getElementById('paddingInput').value = s.padding;
+                if (s.fontSize != null) document.getElementById('fontSizeInput').value = s.fontSize;
+                const lightToggle = document.getElementById('lightThemeToggle');
+                lightToggle.checked = s.lightTheme ?? false;
+                if (lightToggle.checked) previewArea.classList.add('light');
+            } catch (e) {
+                console.warn('설정 불러오기 실패:', e);
+            }
+        }
+
+        function saveChannelSettings() {
+            const channelSet = new Set(window.allMessages.map(m => m.channel));
+            const s = {};
+            channelSet.forEach(channel => {
+                s[channel] = {
+                    color: document.getElementById(`channelColor_${channel}`)?.value,
+                    badge: document.getElementById(`channelBadge_${channel}`)?.checked,
+                    narrator: document.getElementById(`channelNarrator_${channel}`)?.checked,
+                };
+            });
+            localStorage.setItem(CHANNEL_SETTINGS_KEY, JSON.stringify(s));
+        }
+
+        function restoreChannelSettings() {
+            const raw = localStorage.getItem(CHANNEL_SETTINGS_KEY);
+            if (!raw) return;
+            try {
+                const s = JSON.parse(raw);
+                Object.entries(s).forEach(([channel, cs]) => {
+                    const colorEl = document.getElementById(`channelColor_${channel}`);
+                    if (colorEl && cs.color) colorEl.value = cs.color;
+                    const badgeEl = document.getElementById(`channelBadge_${channel}`);
+                    if (badgeEl && cs.badge != null) badgeEl.checked = cs.badge;
+                    const narratorEl = document.getElementById(`channelNarrator_${channel}`);
+                    if (narratorEl && cs.narrator != null) narratorEl.checked = cs.narrator;
+                });
+            } catch (e) {
+                console.warn('채널 설정 불러오기 실패:', e);
+            }
+        }
+
+        // 정적 입력 자동 저장
+        ['narratorInput', 'paddingInput', 'fontSizeInput'].forEach(id => {
+            document.getElementById(id)?.addEventListener('input', saveSettings);
+        });
+        ['removeNarratorItalicCheckbox', 'lightThemeToggle'].forEach(id => {
+            document.getElementById(id)?.addEventListener('change', saveSettings);
+        });
+
+        loadSettings();
     </script>
 </body>
 
