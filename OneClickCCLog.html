@@ -14,9 +14,15 @@
             font-family: Arial, sans-serif;
         }
 
+        html, body {
+            height: 100%;
+            overflow: hidden;
+            margin: 0;
+        }
+
         .container {
             display: flex;
-            height: 170vh;
+            height: 100vh;
         }
 
         .sidebar {
@@ -27,6 +33,8 @@
             display: flex;
             flex-direction: column;
             gap: 16px;
+            overflow-y: auto;
+            flex-shrink: 0;
         }
 
         .sidebar h2 {
@@ -62,10 +70,12 @@
         .preview {
             flex: 1;
             height: 100%;
-            overflow: auto;
+            overflow-y: auto;
+            overflow-x: hidden;
             background-color: #1f1e22;
             color: white;
             padding: 10px;
+            box-sizing: border-box;
         }
 
         button {
@@ -264,6 +274,12 @@
             white-space: pre-wrap;
         }
 
+        /* 기본 다크 배경 / 글꼴 색 (채널 색상 적용 전 초기 상태) */
+        .preview .ccfolia_wrap {
+            background-color: #1f1e22;
+            color: #ddd;
+        }
+
         b {
             font-weight: bold;
         }
@@ -415,11 +431,13 @@
             </p>
             <hr />
             <label>
-                룸 ID:
-                <input type="text" id="roomInput" placeholder="" />
+                로그 HTML 업로드:
+                <input type="file" id="htmlFileInput" accept=".html,.htm" />
             </label>
-
-            <button onclick="loadFirestoreMessages()">룸 메시지 불러오기</button>
+            <label>
+                저장 파일명(선택):
+                <input type="text" id="roomInput" placeholder="ccfolia-wrap" />
+            </label>
             <div id="channelFilter" style="display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px;"></div>
 
             <div class="sidebar-tabs">
@@ -435,7 +453,6 @@
                 <label style="flex-direction: row; align-items: center; gap: 6px;">
                     <input type="checkbox" id="removeNarratorItalicCheckbox" style="width:auto;" /> 서술자 기울임 제거
                 </label>
-                <div id="narratorChannelSettings"></div>
             </div>
 
             <div id="tab-style" class="tab-panel hidden">
@@ -503,10 +520,8 @@
             if (hovered && previewArea.contains(hovered)) {
                 currentHoverGap = hovered;
                 const rect = hovered.getBoundingClientRect();
-                const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-                const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
-                globalDeleteBtn.style.left = (rect.right - 30 + scrollLeft) + 'px';
-                globalDeleteBtn.style.top = (rect.top + 5 + scrollTop) + 'px';
+                globalDeleteBtn.style.left = (rect.right - 30) + 'px';
+                globalDeleteBtn.style.top = (rect.top + 5) + 'px';
                 globalDeleteBtn.style.display = 'block';
             } else if (!e.target.closest('#globalDeleteBtn')) {
                 // 버튼 위가 아니고 대상 위도 아니면 숨김
@@ -593,7 +608,7 @@
         });
 
         function applyStyleToPreviewArea() {
-            const paddingValue = paddingInput.value || "2";
+            const paddingValue = paddingInput.value || "16";
             const doc = previewArea;
             const narratorName = document.getElementById('narratorInput')?.value?.trim();
 
@@ -1281,8 +1296,7 @@
                 gap.className = 'gap';
 
                 // 서술자 모드인지 확인 (비밀 채널은 제외)
-                const narratorChannelEnabled = document.getElementById(`channelNarrator_${m.channel}`)?.checked ?? false;
-                const isNarrator = narratorName && m.name === narratorName && narratorChannelEnabled;
+                const isNarrator = !!narratorName && m.name === narratorName;
 
                 if (isNarrator) {
                     // 서술자 스타일
@@ -1293,7 +1307,7 @@
                     p.style.cssText = `color: rgb(221, 221, 221); display: flow-root; font-style: ${fontStyleValue}; font-weight: bold; text-align: center; margin: 7px !important;`;
 
                     const spanText = document.createElement('span');
-                    spanText.textContent = m.text;
+                    spanText.innerHTML = m.text.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])).replace(/\n/g, '<br>');
                     spanText.style.fontSize = `${fontSizeValue}px`;
                     p.appendChild(spanText);
                     gap.appendChild(p);
@@ -1321,7 +1335,8 @@
                     const spanEmpty = document.createElement('span');
                     const spanName = document.createElement('span');
                     spanName.textContent = m.name;
-                    spanName.style.color = m.color;
+                    // 라이트 테마의 .light span { color !important } 보다 우선하도록 인라인 !important
+                    spanName.style.setProperty('color', m.color, 'important');
                     spanName.style.fontWeight = 'bold';
                     spanName.style.fontSize = `${fontSizeValue}px`;
 
@@ -1329,7 +1344,7 @@
                     spanBr.innerHTML = '<br>';
 
                     const spanText = document.createElement('span');
-                    spanText.textContent = m.text;
+                    spanText.innerHTML = m.text.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])).replace(/\n/g, '<br>');
                     spanText.style.fontSize = `${fontSizeValue}px`;
 
                     p.appendChild(spanEmpty);
@@ -1466,31 +1481,10 @@
                 container.appendChild(label);
             });
 
-            // 서술자 탭에 채널별 서술자 on/off 체크박스 추가
-            const narratorContainer = document.getElementById('narratorChannelSettings');
-            if (narratorContainer) {
-                narratorContainer.innerHTML = '';
-                const title = document.createElement('small');
-                title.textContent = '채널별 서술자 적용';
-                title.style.cssText = 'color: #6b7280; font-size: 11px; margin-bottom: 2px;';
-                narratorContainer.appendChild(title);
-
-                channelSet.forEach(channel => {
-                    const isMainChannel = channel.includes('메인') || channel.includes('main');
-                    const narratorLabel = document.createElement('label');
-                    narratorLabel.style.cssText = 'flex-direction: row; align-items: center; gap: 6px;';
-                    narratorLabel.innerHTML = `
-                        <input type="checkbox" id="channelNarrator_${channel}" style="width:auto;" ${isMainChannel ? 'checked' : ''} />
-                        ${channel}
-                    `;
-                    narratorContainer.appendChild(narratorLabel);
-                });
-            }
-
             // 저장된 채널 설정 복원 후, 변경 시 자동 저장 리스너 등록
             restoreChannelSettings();
             channelSet.forEach(channel => {
-                [`channelColor_${channel}`, `channelBadge_${channel}`, `channelNarrator_${channel}`].forEach(id => {
+                [`channelColor_${channel}`, `channelBadge_${channel}`].forEach(id => {
                     document.getElementById(id)?.addEventListener('change', saveChannelSettings);
                 });
             });
@@ -1541,7 +1535,6 @@
                 s[channel] = {
                     color: document.getElementById(`channelColor_${channel}`)?.value,
                     badge: document.getElementById(`channelBadge_${channel}`)?.checked,
-                    narrator: document.getElementById(`channelNarrator_${channel}`)?.checked,
                 };
             });
             localStorage.setItem(CHANNEL_SETTINGS_KEY, JSON.stringify(s));
@@ -1557,8 +1550,6 @@
                     if (colorEl && cs.color) colorEl.value = cs.color;
                     const badgeEl = document.getElementById(`channelBadge_${channel}`);
                     if (badgeEl && cs.badge != null) badgeEl.checked = cs.badge;
-                    const narratorEl = document.getElementById(`channelNarrator_${channel}`);
-                    if (narratorEl && cs.narrator != null) narratorEl.checked = cs.narrator;
                 });
             } catch (e) {
                 console.warn('채널 설정 불러오기 실패:', e);
@@ -1574,6 +1565,94 @@
         });
 
         loadSettings();
+
+        // ─── HTML 업로드 → 파싱 (확장 뷰어 출력 형식) ───────────────
+        // 편집 완료 표식 제거
+        const stripEdited = (s) => (s || '').replace(/(\s*\[편집\s*완료\])+\s*$/, '').trim();
+
+        function parseViewerHTML(htmlString) {
+            const doc = new DOMParser().parseFromString(htmlString, 'text/html');
+            // 신규 경량 구조(.m) 우선, 없으면 레거시(.MUI [data-index]) 폴백
+            const compact = doc.querySelectorAll('.m');
+            const msgs = [];
+
+            if (compact.length) {
+                compact.forEach(x => {
+                    const nm = x.querySelector('.nm');
+                    let name = '', color = '';
+                    if (nm) {
+                        for (const n of nm.childNodes) if (n.nodeType === 3) name += n.textContent;
+                        name = name.trim();
+                        color = nm.style.color || '';
+                    }
+                    const tx = x.querySelector('.tx');
+                    let text = '';
+                    if (tx) {
+                        const clone = tx.cloneNode(true);
+                        clone.querySelectorAll('br').forEach(br => br.replaceWith('\n'));
+                        text = stripEdited(clone.textContent);
+                    }
+                    const img = x.querySelector('img.av') || x.querySelector('img');
+                    const icon = img ? (img.getAttribute('src') || '') : '';
+                    if (x.classList.contains('sys') || name.toLowerCase() === 'system') {
+                        msgs.push({ name: 'system', text, icon: '', color: '#ccc', channel: '메인' });
+                        return;
+                    }
+                    if (!name) name = icon ? '이름 없음' : 'system';
+                    if (text === '') return;
+                    msgs.push({ name, text, icon, color: color || '#ccc', channel: '메인' });
+                });
+                return msgs;
+            }
+
+            // 레거시 구조
+            const items = doc.querySelectorAll('[data-index]');
+            items.forEach(x => {
+                const h6 = x.querySelector('h6');
+                let name = '', color = '';
+                if (h6) {
+                    for (const n of h6.childNodes) if (n.nodeType === 3) name += n.textContent;
+                    name = name.trim();
+                    color = h6.style.color || '';
+                }
+                const p = x.querySelector('p');
+                const text = stripEdited(p ? p.textContent : '');
+                const img = x.querySelector('.MuiListItemAvatar-root img') || x.querySelector('img');
+                const icon = img ? (img.getAttribute('src') || '') : '';
+                if (!name) name = icon ? '이름 없음' : 'system';
+                if (text === '' && name.toLowerCase() !== 'system') return;
+                msgs.push({ name, text, icon, color: color || '#ccc', channel: '메인' });
+            });
+            return msgs;
+        }
+
+        function loadFromHTMLFile(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const msgs = parseViewerHTML(e.target.result);
+                    if (!msgs.length) {
+                        previewArea.innerHTML = '<p style="color:red;padding:20px;">메시지를 찾지 못했습니다. (확장 뷰어 형식의 HTML인지 확인하세요)</p>';
+                        return;
+                    }
+                    window.allMessages = msgs;
+                    window.selectedChannels = new Set(); // 단일 채널 → 전체 표시
+                    renderChannelFilter();
+                    createChannelColorSettings();
+                    renderMessages(); // renderMessages가 시스템/서술자/패딩/배경/편집까지 전부 처리
+                } catch (err) {
+                    console.error(err);
+                    previewArea.innerHTML = `<p style="color:red;padding:20px;">파싱 오류: ${err.message}</p>`;
+                }
+            };
+            reader.onerror = () => { previewArea.innerHTML = '<p style="color:red;padding:20px;">파일 읽기 실패</p>'; };
+            reader.readAsText(file, 'UTF-8');
+        }
+
+        document.getElementById('htmlFileInput')?.addEventListener('change', (e) => {
+            const file = e.target.files && e.target.files[0];
+            if (file) loadFromHTMLFile(file);
+        });
     </script>
 </body>
 
