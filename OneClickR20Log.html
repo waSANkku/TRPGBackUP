@@ -912,6 +912,23 @@
     function bindMessageInteractions(doc) {
       let hoveredMessage = null;
 
+      // 미리보기(iframe)는 바깥 document와 별개라 outer keydown 리스너가 안 먹는다.
+      // iframe 문서가 새로 그려질 때마다(최초 적용/되돌리기 복원 시) 여기서 다시 바인딩.
+      doc.addEventListener('keydown', (e) => {
+        const isCtrl = e.ctrlKey || e.metaKey;
+        if (!isCtrl) return;
+        const active = doc.activeElement;
+        if (active && active.getAttribute && active.getAttribute('contenteditable') === 'true') return;
+
+        if (e.key === 'z' || e.key === 'Z') {
+          e.preventDefault();
+          undoEdit();
+        } else if (e.key === 'y' || e.key === 'Y') {
+          e.preventDefault();
+          redoEdit();
+        }
+      });
+
       const delBtn = doc.createElement('button');
       delBtn.textContent = '✕';
       delBtn.style.cssText = `
