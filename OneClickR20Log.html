@@ -545,15 +545,14 @@
         });
       });
 
-      // 저장 버튼: select에서 고른 확장자(HTML/TXT)로 저장
+      // 저장 버튼: select에서 고른 확장자(HTML/TXT)로 저장. 내용은 항상 동일한 HTML 마크업이고
+      // TXT는 그 HTML을 텍스트 그대로 .txt 확장자로 담아내는 것뿐(별도로 텍스트만 추출하지 않음).
       document.getElementById('saveBtn').addEventListener('click', () => {
         const filename = document.getElementById('filenameInput').value.trim() || 'roll20-wrap';
         const format = document.getElementById('saveFormatSelect').value;
         const html = getIframeHTML();
 
-        const isTxt = format === 'txt';
-        const content = isTxt ? stripHTML(html) : html;
-        const blob = new Blob([content], { type: isTxt ? 'text/plain' : 'text/html' });
+        const blob = new Blob([html], { type: format === 'txt' ? 'text/plain' : 'text/html' });
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
         a.download = filename + '.' + format;
@@ -717,15 +716,29 @@
           }
 
           if (document.getElementById("removeApiCheckbox").checked) {
-            doc.querySelectorAll("span").forEach(span => {
-              if (span.style.color === "rgb(170, 170, 170)") {
-                const parentDiv = span.closest("div");
-                if (parentDiv) parentDiv.remove();
-              }
-            });
+            // ⚠️ API 에코 메시지 삭제와 "연속 발화자 병합"을 한 패스로 같이 처리한다.
+            // 예전엔 API 메시지를 먼저 통째로 지운 뒤 남은 .message들만 보고 병합 여부를 판단했는데,
+            // 그러면 [Alice → Bob의 API 명령(삭제됨) → Alice] 같은 경우 Bob이 있었다는 사실을
+            // 잃어버리고 두 Alice 메시지를 "연속 발화"로 착각해 잘못 병합해버렸다.
+            // 지워지는 메시지 자신의 화자를 먼저 확인해서 화자가 바뀌면 흐름을 끊도록 고침.
             let lastSpeaker = null;
 
-            doc.querySelectorAll(".message").forEach(message => {
+            Array.from(doc.querySelectorAll(".message")).forEach(message => {
+              const graySpan = Array.from(message.querySelectorAll("span")).find(
+                span => span.style.color === "rgb(170, 170, 170)"
+              );
+
+              if (graySpan) {
+                const ownBySpan = message.querySelector("span.by");
+                const ownSpeaker = ownBySpan ? ownBySpan.textContent.trim() : null;
+                // 이 API 메시지의 화자가 방금 화자와 다르거나(또는 알 수 없으면) 흐름이 끊긴 것
+                if (!ownSpeaker || ownSpeaker !== lastSpeaker) {
+                  lastSpeaker = null;
+                }
+                message.remove();
+                return;
+              }
+
               // 만약 desc면 speaker 흐름을 끊는다 (lastSpeaker 무효화)
               if (message.classList.contains("desc")) {
                 lastSpeaker = null;
@@ -737,8 +750,6 @@
               const currentSpeaker = bySpan ? bySpan.textContent.trim() : null;
 
               if (currentSpeaker && currentSpeaker === lastSpeaker) {
-
-
                 // ✅ 연속 발화자 → spacer 제거
                 const spacer = message.querySelector(".spacer");
                 if (spacer) spacer.remove();
@@ -749,10 +760,8 @@
 
               if (currentSpeaker) {
                 lastSpeaker = currentSpeaker;
-              } else {
-                // 화자가 없으면 현재 화자 유지 (desc 같은 경우)
-                // lastSpeaker 유지
               }
+              // 화자가 없으면 lastSpeaker 유지
             });
           }
 
@@ -978,9 +987,26 @@
         z-index: 9999;
       `;
 
+      const addBtn = doc.createElement('button');
+      addBtn.textContent = '추가';
+      addBtn.className = 'add-btn';
+      addBtn.style.cssText = `
+        position: fixed;
+        background: rgba(150, 90, 220, 0.85);
+        border: none;
+        color: white;
+        font-weight: bold;
+        padding: 2px 6px;
+        border-radius: 4px;
+        cursor: pointer;
+        display: none;
+        z-index: 9999;
+      `;
+
       doc.body.appendChild(delBtn);
       doc.body.appendChild(splitBtn);
       doc.body.appendChild(cssBtn);
+      doc.body.appendChild(addBtn);
 
       function positionMessageButtons(msg) {
         const rect = msg.getBoundingClientRect();
@@ -990,15 +1016,19 @@
         splitBtn.style.left = (rect.right - 68) + 'px';
         cssBtn.style.top = (rect.top + 5) + 'px';
         cssBtn.style.left = (rect.right - 106) + 'px';
+        addBtn.style.top = (rect.top + 5) + 'px';
+        addBtn.style.left = (rect.right - 144) + 'px';
         delBtn.style.display = 'block';
         splitBtn.style.display = 'block';
         cssBtn.style.display = 'block';
+        addBtn.style.display = 'block';
       }
 
       function hideMessageButtons() {
         delBtn.style.display = 'none';
         splitBtn.style.display = 'none';
         cssBtn.style.display = 'none';
+        addBtn.style.display = 'none';
         hoveredMessage = null;
       }
 
@@ -1007,7 +1037,7 @@
         if (msg) {
           hoveredMessage = msg;
           positionMessageButtons(msg);
-        } else if (!e.target.closest('.split-btn') && !e.target.closest('.css-btn') && e.target !== delBtn) {
+        } else if (!e.target.closest('.split-btn') && !e.target.closest('.css-btn') && !e.target.closest('.add-btn') && e.target !== delBtn) {
           hideMessageButtons();
         }
       });
@@ -1023,6 +1053,13 @@
         e.stopPropagation();
         if (!hoveredMessage) return;
         openCssModal(hoveredMessage);
+        hideMessageButtons();
+      });
+
+      addBtn.addEventListener('click', e => {
+        e.stopPropagation();
+        if (!hoveredMessage) return;
+        insertDescMessageAfter(doc, hoveredMessage);
         hideMessageButtons();
       });
 
@@ -1051,64 +1088,91 @@
         }
       });
 
-      // 더블클릭 수정
-      doc.querySelectorAll('.message').forEach(span => {
-        span.addEventListener('dblclick', () => {
-          span.setAttribute('contenteditable', 'true');
-          span.focus();
-        });
-        span.addEventListener('blur', () => {
-          span.removeAttribute('contenteditable');
-          saveCurrentSplitList();
+      // 더블클릭 수정 (새로 추가되는 desc 메시지에도 재사용하기 위해 per-message 바인딩 함수로 분리)
+      doc.querySelectorAll('.message').forEach(span => bindSingleMessageEdit(doc, span));
+    }
 
-        });
-         span.addEventListener('keydown', (e) => {
-         if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            span.blur(); // 수정 종료
-          }
-        });
-        // ✅ 붙여넣기 이미지 처리(0628)
-        span.addEventListener('paste', (e) => {
-          const items = e.clipboardData.items;
-
-          for (let i = 0; i < items.length; i++) {
-            const item = items[i];
-
-            if (item.type.indexOf('image') !== -1) {
-              e.preventDefault(); // base64 삽입 방지
-
-              const file = item.getAsFile();
-              const reader = new FileReader();
-
-              reader.onload = (event) => {
-                // canvas로 WebP로 압축
-                const img = new Image();
-                img.onload = () => {
-                  const canvas = document.createElement('canvas');
-                  canvas.width = img.width;
-                  canvas.height = img.height;
-                  const ctx = canvas.getContext('2d');
-                  ctx.drawImage(img, 0, 0);
-
-                  const webpDataUrl = canvas.toDataURL('image/webp', 0.5); // 품질 조정 가능
-                  const imageEl = document.createElement('img');
-                  imageEl.src = webpDataUrl;
-
-                  // ✅ 너비 100% 추가
-                  imageEl.style.width = '100%';
-
-                  span.appendChild(imageEl);
-                };
-                img.src = event.target.result;
-              };
-
-              reader.readAsDataURL(file); // 최초는 base64지만 압축해서 재삽입
-              break; // 하나만 처리
-            }
-          }
-        });
+    // 메시지 하나에 더블클릭 편집 + 이미지 붙여넣기 동작을 붙인다.
+    // bindMessageInteractions의 초기 일괄 바인딩과, "추가" 버튼으로 새로 삽입한 메시지 양쪽에서 재사용.
+    function bindSingleMessageEdit(doc, span) {
+      span.addEventListener('dblclick', () => {
+        span.setAttribute('contenteditable', 'true');
+        span.focus();
       });
+      span.addEventListener('blur', () => {
+        span.removeAttribute('contenteditable');
+        saveCurrentSplitList();
+
+      });
+       span.addEventListener('keydown', (e) => {
+       if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          span.blur(); // 수정 종료
+        }
+      });
+      // ✅ 붙여넣기 이미지 처리(0628)
+      span.addEventListener('paste', (e) => {
+        const items = e.clipboardData.items;
+
+        for (let i = 0; i < items.length; i++) {
+          const item = items[i];
+
+          if (item.type.indexOf('image') !== -1) {
+            e.preventDefault(); // base64 삽입 방지
+
+            const file = item.getAsFile();
+            const reader = new FileReader();
+
+            reader.onload = (event) => {
+              // canvas로 WebP로 압축
+              const img = new Image();
+              img.onload = () => {
+                const canvas = document.createElement('canvas');
+                canvas.width = img.width;
+                canvas.height = img.height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0);
+
+                const webpDataUrl = canvas.toDataURL('image/webp', 0.5); // 품질 조정 가능
+                const imageEl = document.createElement('img');
+                imageEl.src = webpDataUrl;
+
+                // ✅ 너비 100% 추가
+                imageEl.style.width = '100%';
+
+                span.appendChild(imageEl);
+              };
+              img.src = event.target.result;
+            };
+
+            reader.readAsDataURL(file); // 최초는 base64지만 압축해서 재삽입
+            break; // 하나만 처리
+          }
+        }
+      });
+    }
+
+    // 클릭한 메시지 바로 다음에 새 desc(서술) 메시지를 만들어 끼워넣고 바로 편집 모드로 진입시킨다.
+    function insertDescMessageAfter(doc, afterMsg) {
+      const msgId = "descmsg-" + Date.now() + Math.floor(Math.random() * 1000);
+      const descDiv = doc.createElement("div");
+      descDiv.className = "message desc";
+      descDiv.setAttribute("data-messageid", msgId);
+      descDiv.setAttribute("style",
+        "box-sizing: content-box; padding-left: 15px; padding-right: 16px; padding-bottom: 7px; background-color: rgb(241, 241, 241); position: relative; font-style: italic; font-weight: bold; text-align: center;");
+      descDiv.innerHTML = `
+            <div class="spacer" style="box-sizing: content-box; background-color: rgb(225, 225, 225); height: 2px; margin-bottom: 7px; margin-left: -15px; margin-right: -12px;"></div>
+            새 서술
+            <div id="menu-${msgId}" class="flyout" style="box-sizing: content-box; position: absolute; cursor: pointer; height: 24px; width: 2px; right: 10px; top: 0px;"></div>
+          `;
+
+      afterMsg.parentNode.insertBefore(descDiv, afterMsg.nextSibling);
+      bindSingleMessageEdit(doc, descDiv);
+      saveCurrentSplitList();
+
+      // 바로 편집할 수 있게 편집 모드로 진입
+      descDiv.setAttribute('contenteditable', 'true');
+      descDiv.focus();
     }
 
     function darkenColor(hex, amount = 15) {
@@ -1336,7 +1400,7 @@
     const clone = doc.documentElement.cloneNode(true);
 
     // ✅ 분할 버튼 제거
-    clone.querySelectorAll('button.split-btn, button.css-btn').forEach(btn => btn.remove());
+    clone.querySelectorAll('button.split-btn, button.css-btn, button.add-btn').forEach(btn => btn.remove());
 
     // ✅ 삭제 버튼(✕) 제거
     clone.querySelectorAll('button').forEach(btn => {
@@ -1362,14 +1426,6 @@
     }
 
 
-    //HTMl 분리 (0628)
-        
-    function stripHTML(html) {
-      const tempDiv = document.createElement('div');
-      tempDiv.innerHTML = html;
-      tempDiv.querySelectorAll('style, script').forEach(el => el.remove());
-      return tempDiv.textContent || tempDiv.innerText || '';
-    }
     // 전역 변수
     let splitHtmls = {};
     let currentSplitKey = '';
@@ -1692,7 +1748,7 @@
     const clone = doc.documentElement.cloneNode(true);
 
     // ✅ 복제본에서 버튼들 제거
-    clone.querySelectorAll('button.split-btn, button.css-btn').forEach(btn => btn.remove());
+    clone.querySelectorAll('button.split-btn, button.css-btn, button.add-btn').forEach(btn => btn.remove());
     clone.querySelectorAll('button').forEach(btn => {
       if (btn.textContent === '✕') btn.remove();
     });
