@@ -841,7 +841,6 @@
 
                 // ✅ 개별 메시지로 desc 생성
                 toConvert.forEach(orig => {
-                  const msgId = "descmsg-" + Date.now() + Math.floor(Math.random() * 1000);
                   let text = "";
 
                   const bySpan = orig.querySelector("span.by");
@@ -851,17 +850,8 @@
                     text = orig.textContent.trim();
                   }
 
-                  const descDiv = doc.createElement("div");
-                  descDiv.className = "message desc";
-                  descDiv.setAttribute("data-messageid", msgId);
-                  descDiv.setAttribute("style",
-                    "box-sizing: content-box; padding-left: 15px; padding-right: 16px; padding-bottom: 7px; background-color: rgb(241, 241, 241); position: relative; font-style: italic; font-weight: bold; text-align: center;");
-
-                  descDiv.innerHTML = `
-                        <div class="spacer" style="box-sizing: content-box; background-color: rgb(225, 225, 225); height: 2px; margin-bottom: 7px; margin-left: -15px; margin-right: -12px;"></div>
-                        ${text}
-                        <div id="menu-${msgId}" class="flyout" style="box-sizing: content-box; position: absolute; cursor: pointer; height: 24px; width: 2px; right: 10px; top: 0px;"></div>
-                      `;
+                  // orig 자신의 렌더링 스타일(폰트/사이즈/색상)을 그대로 물려받아 만든다
+                  const descDiv = createDescDiv(doc, orig, text);
 
                   orig.parentNode.insertBefore(descDiv, orig);
                   orig.remove();
@@ -1152,19 +1142,33 @@
       });
     }
 
-    // 클릭한 메시지 바로 다음에 새 desc(서술) 메시지를 만들어 끼워넣고 바로 편집 모드로 진입시킨다.
-    function insertDescMessageAfter(doc, afterMsg) {
+    // desc(서술) 스타일 메시지 div를 새로 만든다. 색상/패딩 같은 desc 고유 스타일은 고정값이지만,
+    // font-family/font-size/color는 refMsg의 실제 계산된(computed) 스타일을 그대로 가져와 적용한다.
+    // (직접 만든 div는 원본 로그의 CSS를 못 물려받아서 기본값으로 떨어지는 바람에 폰트/글자색이
+    //  주변 메시지와 안 맞아 보이던 문제 수정)
+    function createDescDiv(doc, refMsg, text) {
       const msgId = "descmsg-" + Date.now() + Math.floor(Math.random() * 1000);
+      const ref = refMsg ? doc.defaultView.getComputedStyle(refMsg) : null;
+      const fontFamily = ref ? ref.fontFamily : '';
+      const fontSize = ref ? ref.fontSize : '';
+      const color = ref ? ref.color : '';
+
       const descDiv = doc.createElement("div");
       descDiv.className = "message desc";
       descDiv.setAttribute("data-messageid", msgId);
       descDiv.setAttribute("style",
-        "box-sizing: content-box; padding-left: 15px; padding-right: 16px; padding-bottom: 7px; background-color: rgb(241, 241, 241); position: relative; font-style: italic; font-weight: bold; text-align: center;");
+        `box-sizing: content-box; padding-left: 15px; padding-right: 16px; padding-bottom: 7px; background-color: rgb(241, 241, 241); position: relative; font-style: italic; font-weight: bold; text-align: center; font-family: ${fontFamily}; font-size: ${fontSize}; color: ${color};`);
       descDiv.innerHTML = `
             <div class="spacer" style="box-sizing: content-box; background-color: rgb(225, 225, 225); height: 2px; margin-bottom: 7px; margin-left: -15px; margin-right: -12px;"></div>
-            새 서술
+            ${text}
             <div id="menu-${msgId}" class="flyout" style="box-sizing: content-box; position: absolute; cursor: pointer; height: 24px; width: 2px; right: 10px; top: 0px;"></div>
           `;
+      return descDiv;
+    }
+
+    // 클릭한 메시지 바로 다음에 새 desc(서술) 메시지를 만들어 끼워넣고 바로 편집 모드로 진입시킨다.
+    function insertDescMessageAfter(doc, afterMsg) {
+      const descDiv = createDescDiv(doc, afterMsg, '새 서술');
 
       afterMsg.parentNode.insertBefore(descDiv, afterMsg.nextSibling);
       bindSingleMessageEdit(doc, descDiv);
