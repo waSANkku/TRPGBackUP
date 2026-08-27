@@ -1,0 +1,2137 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <title>껍질 미리-깐 코코포 로그</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+            margin: 0;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+
+        .sidebar {
+            width: 320px;
+            padding: 20px 18px;
+            background-color: #ffffff;
+            border-right: 1px solid #e5e7eb;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+
+        .sidebar h2 {
+            margin: 0 0 4px;
+            font-size: 16px;
+            font-weight: 700;
+            color: #111827;
+        }
+
+        .sidebar>p {
+            margin: 0;
+            font-size: 12px;
+            line-height: 1.6;
+            color: #6b7280;
+        }
+
+        .sidebar>p a {
+            color: #2563eb;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .sidebar>p a:hover {
+            text-decoration: underline;
+        }
+
+        .sidebar>hr {
+            margin: 8px 0 4px;
+            border: 0;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .preview {
+            flex: 1;
+            height: 100%;
+            overflow-y: auto;
+            overflow-x: hidden;
+            background-color: #1f1e22;
+            color: white;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+
+        button {
+            padding: 9px 10px;
+            font-size: 13px;
+            cursor: pointer;
+            border-radius: 8px;
+            border: 1px solid #d1d5db;
+            background-color: #ffffff;
+            color: #111827;
+            transition: background-color 0.15s, border-color 0.15s, box-shadow 0.15s;
+        }
+
+        button:hover {
+            background-color: #f3f4f6;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.25);
+        }
+
+        .sidebar-tabs {
+            display: flex;
+            margin-top: 10px;
+            border-radius: 999px;
+            padding: 2px;
+            background-color: #e5e7eb;
+            gap: 2px;
+        }
+
+        .sidebar-tab {
+            flex: 1;
+            padding: 6px 0;
+            font-size: 12px;
+            background-color: transparent;
+            border: none;
+            cursor: pointer;
+            text-align: center;
+            border-radius: 999px;
+            color: #6b7280;
+        }
+
+        .sidebar-tab.active {
+            background-color: #2563eb;
+            color: #f9fafb;
+        }
+
+        .tab-panel {
+            margin-top: 10px;
+            padding: 10px 10px 8px;
+            border-radius: 10px;
+            background-color: #f9fafb;
+            border: 1px solid #e5e7eb;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .tab-panel.hidden {
+            display: none;
+        }
+
+        /* sidebar form controls */
+        label {
+            font-size: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            color: #374151;
+        }
+
+        .sidebar input[type="text"],
+        .sidebar input[type="number"],
+        .sidebar input[type="color"] {
+            padding: 6px 10px;
+            border-radius: 8px;
+            border: 1px solid #d1d5db;
+            font-size: 12px;
+            box-sizing: border-box;
+            background-color: #ffffff;
+            color: #111827;
+        }
+
+        .sidebar input[type="color"] {
+            height: 36px;
+            cursor: pointer;
+        }
+
+        .sidebar input[type="text"]::placeholder,
+        .sidebar input[type="number"]::placeholder {
+            color: #9ca3af;
+        }
+
+        .sidebar input[type="text"]:focus,
+        .sidebar input[type="number"]:focus {
+            outline: none;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.35);
+        }
+
+        input[type="number"] {
+            width: 60px;
+            padding: 5px;
+        }
+
+        /* tab-narrator modern layout */
+        #tab-narrator {
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        #tab-narrator label {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        #tab-narrator label:last-child {
+            flex-direction: row;
+            align-items: center;
+            gap: 6px;
+            margin-top: 4px;
+        }
+
+        #tab-narrator input[type="text"] {
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        #tab-narrator input[type="checkbox"] {
+            width: auto;
+        }
+
+        /* tab-style 동일 스타일 */
+        #tab-style label:last-child {
+            flex-direction: row;
+            align-items: center;
+            gap: 6px;
+            margin-top: 4px;
+        }
+
+        #tab-style input[type="checkbox"] {
+            width: auto;
+        }
+
+        p {
+            margin: 0;
+        }
+
+        b {
+            color: gray;
+            font-size: 9pt;
+            font-weight: 200;
+        }
+
+        span,
+        b {
+            font-size: 16px;
+            font-family: 'Arial', sans-serif;
+            line-height: 1.5;
+        }
+
+        .preview p,
+        .preview span,
+        .preview b {
+            white-space: pre-wrap;
+        }
+
+        /* 기본 다크 배경 / 글꼴 색 (채널 색상 적용 전 초기 상태) */
+        .preview .ccfolia_wrap {
+            background-color: #1f1e22;
+            color: #ddd;
+        }
+
+        b {
+            font-weight: bold;
+        }
+
+        .ccfolia_wrap {
+            position: relative;
+            background-color: #2c2c2cde;
+            color: #fefefe;
+        }
+
+        .msg_container {
+            flex-shrink: 0;
+            width: 40px;
+            height: 40px;
+            overflow: hidden;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .msg_container img {
+            width: 40px;
+        }
+
+        span:before {
+            display: none !important;
+        }
+
+
+        .gap {
+            gap: 15px;
+            display: flex;
+            -webkit-box-pack: start;
+            justify-content: flex-start;
+            align-items: flex-start;
+            position: relative;
+            text-decoration: none;
+            width: 100%;
+            box-sizing: border-box;
+            text-align: left;
+            padding: 16px 16px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        hr {
+            display: none;
+        }
+
+        /* 전역 삭제 버튼 */
+        #globalDeleteBtn {
+            position: fixed;
+            background: rgba(255, 50, 50, 0.8);
+            border: none;
+            color: white;
+            font-weight: bold;
+            padding: 2px 6px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: none;
+            z-index: 9999;
+            pointer-events: auto;
+            width: 24px;
+            height: 24px;
+            font-size: 14px;
+            line-height: 1;
+        }
+
+        .preview .gap:hover,
+        .preview .player.system:hover {
+            outline: 1px solid rgba(255, 50, 50, 0.3);
+        }
+
+        /* 비밀 메시지 뱃지 */
+        .secret-badge {
+            display: inline-block;
+            background-color: #ffffff2b;
+            color: white;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: normal;
+            position: absolute;
+            right: 16px;
+            top: 8px;
+            z-index: 10;
+        }
+
+        /* Light theme overrides */
+        .preview.light {
+            background-color: #f1f1f1;
+            color: #000000;
+        }
+
+        .preview.light .ccfolia_wrap {
+            background-color: #f9fafb !important;
+        }
+
+        .preview.light .gap {
+            border-top-color: rgba(0, 0, 0, 0.1);
+        }
+
+        .preview.light p,
+        .preview.light span {
+            color: #575757 !important;
+        }
+
+        .preview.light .msg_container {
+            background: transparent !important;
+        }
+
+        .preview.light .player.system {
+            background: rgb(0 0 0 / 4%) !important;
+            border-top-color: rgba(0, 0, 0, 0.1) !important;
+        }
+
+        .preview.light .player.system .Uname {
+            background: #0000001c !important;
+            color: #5a6671 !important;
+        }
+
+        .preview.light .player.system .Utext {
+            color: #4b5563 !important;
+        }
+        .preview .player.system { text-align: center; justify-content: center; }
+        .preview .player.system { width: 100%; max-width: none; margin: 0; border-radius: 0; background: transparent !important; }
+        .preview .player.system .textWrap { float: none !important; width: auto; max-width: calc(100% - 32px); box-sizing: border-box; margin: 0 auto !important; text-align: center; overflow-wrap: anywhere; }
+        .preview .player.system .Uname { display: table; width: auto; margin-left: auto !important; margin-right: auto !important; }
+        .preview .player.system .Utext { text-align: center; }
+
+        .preview.light .secret-badge {
+            background-color: #0000002b;
+            color: #111827;
+        }
+
+        .portrait-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .portrait-option {
+            width: 52px;
+            height: 52px;
+            padding: 2px;
+            border: 2px solid #d1d5db;
+            border-radius: 7px;
+            background: #f3f4f6;
+            cursor: pointer;
+        }
+        .portrait-option.active { border-color: #2563eb; box-shadow: 0 0 0 1px #2563eb; }
+        .portrait-option img { width: 100%; height: 100%; object-fit: cover; border-radius: 4px; }
+        .portrait-option img { object-position: top center; }
+        .tab-setting-btn { width: 100%; text-align: left; display: flex; align-items: center; justify-content: space-between; }
+        .tab-setting-btn.active { border-color: #2563eb; background: #eff6ff; }
+        .tab-setting-meta { color: #6b7280; font-size: 11px; }
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.5); display: flex; align-items: center; justify-content: center; z-index: 10000; }
+        .modal-overlay.hidden { display: none; }
+        .modal-panel { background: #fff; color: #111827; border-radius: 12px; padding: 18px; width: min(560px, calc(100vw - 32px)); max-height: 85vh; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.3); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; }
+        .modal-header h3 { margin: 0; font-size: 16px; }
+        .modal-close { border: 0; background: transparent; font-size: 18px; padding: 4px; }
+        .modal-list { overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+        .modal-tab-row { display: grid; grid-template-columns: auto 1fr repeat(3, auto); gap: 8px; align-items: center; border: 1px solid #e5e7eb; border-radius: 8px; padding: 8px; font-size: 12px; }
+        .modal-tab-row label { flex-direction: row; align-items: center; gap: 4px; white-space: nowrap; }
+        .output-switch { position: relative; width: 38px; height: 22px; flex-shrink: 0; display: block; cursor: pointer; }
+        .output-switch input { position: absolute; inset: 0; z-index: 2; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
+        .output-slider { position: absolute; inset: 0; border-radius: 999px; background: #c7cbd1; cursor: pointer; transition: .2s; }
+        .output-slider:before { content: ''; display: block !important; position: absolute; z-index: 1; width: 18px; height: 18px; left: 2px; top: 2px; border-radius: 50%; background: #fff !important; transition: .2s; box-shadow: 0 1px 3px #0004; }
+        .output-switch input:checked + .output-slider { background: #2563eb; }
+        .output-switch input:checked + .output-slider:before { transform: translateX(16px); }
+        .tab-setting-btn.tab-disabled { color: #9ca3af; background: #f3f4f6; border-color: #d1d5db; }
+        .tab-option-disabled { opacity: .4; }
+        .tab-toggle { padding: 5px 8px; border-radius: 999px; font-size: 11px; white-space: nowrap; border: 1px solid #d1d5db; background: #fff; color: #6b7280; cursor: pointer; }
+        .tab-toggle.active { color: #fff; background: #2563eb; border-color: #2563eb; }
+        .tab-toggle:disabled { opacity: .35; cursor: not-allowed; }
+        #progressOverlay { display:none; position:fixed; inset:0; z-index:20000; background:rgba(0,0,0,.28); align-items:flex-start; justify-content:center; pointer-events:none; }
+        #progressOverlay.show { display:flex; }
+        .progress-box { margin-top:18px; width:min(420px,calc(100vw - 32px)); padding:12px 14px; border-radius:10px; background:#fff; color:#111827; box-shadow:0 5px 20px #0004; font-size:12px; }
+        .progress-track { height:6px; margin-top:8px; overflow:hidden; border-radius:99px; background:#e5e7eb; }
+        .progress-fill { width:35%; height:100%; border-radius:99px; background:#2563eb; animation:progress-slide 1s ease-in-out infinite; }
+        @keyframes progress-slide { 0%{transform:translateX(-120%)} 100%{transform:translateX(320%)} }
+        .modal-detail { border-top: 1px solid #e5e7eb; padding-top: 10px; overflow-y: auto; }
+        .image-modal-panel { width: min(760px, calc(100vw - 32px)); }
+        .image-modal-list { overflow-y: auto; display: flex; flex-direction: column; gap: 16px; }
+        .image-journal-block { border: 1px solid #e5e7eb; border-radius: 10px; padding: 12px; }
+        .image-journal-title { font-weight: 700; font-size: 13px; margin-bottom: 8px; }
+        .image-choice-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(82px, 1fr)); gap: 10px; }
+        .image-choice { aspect-ratio: 1; min-width: 0; padding: 3px; border: 2px solid #d1d5db; border-radius: 9px; background: #f3f4f6; cursor: pointer; }
+        .image-choice.active { border-color: #2563eb; box-shadow: 0 0 0 2px #93c5fd; }
+        .image-choice img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: top center; border-radius: 6px; }
+        .image-fallback { color: #6b7280; font-size: 12px; margin-top: 8px; }
+        .gap.other-compact { display: block !important; padding: 4px 16px !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .gap.other-compact .compact-name { font-weight: 700; margin-right: 6px; }
+        .gap.other-compact .compact-text { color: #ddd; }
+        .preview.light .gap.other-compact .compact-text { color: #575757; }
+        .preview .gap.info-message.bubble-themed,
+        .preview .gap.other-message.bubble-themed {
+            width: 100%;
+            margin: 0;
+            border: 0;
+            border-radius: 0;
+            box-shadow: none;
+        }
+        .preview .gap.info-message.bubble-themed {
+            padding: 4px 16px !important;
+        }
+        .preview .gap.other-message.bubble-themed {
+            margin-top: 0;
+            margin-bottom: 0;
+            border: 0;
+            border-radius: 20px;
+            padding: 2px 16px !important;
+            background-color: var(--main-card-color) !important;
+        }
+        .preview .gap.info-message.bubble-themed .bubble-surface,
+        .preview .gap.other-message.bubble-themed .bubble-surface {
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+            width: 100%;
+            box-sizing: border-box;
+            position: relative;
+            padding: 8px 12px;
+            border-radius: 16px;
+            background-color: var(--bubble-color) !important;
+        }
+        .preview .gap.info-message.bubble-themed .bubble-surface { border-radius: 12px; }
+        .preview .gap.info-message.bubble-themed .bubble-surface {
+            border: 1px solid rgba(255,255,255,.12);
+            border-left: 4px solid rgba(255,255,255,.45);
+            box-shadow: 0 3px 10px rgba(0,0,0,.12);
+        }
+        .preview .gap.other-message.bubble-themed.other-compact .bubble-surface {
+            display: block;
+            padding: 7px 12px;
+            border-radius: 16px;
+        }
+        .preview .gap.other-message.other-compact {
+            padding: 7px 12px !important;
+            border-radius: 0;
+        }
+        .preview.light .gap.info-message.bubble-themed,
+        .preview.light .gap.other-message.bubble-themed { border-color: transparent; box-shadow: none; }
+        .preview.light .gap.info-message.bubble-themed .bubble-surface {
+            border-color: rgba(0,0,0,.1);
+            border-left-color: rgba(0,0,0,.22);
+            box-shadow: 0 3px 10px rgba(0,0,0,.06);
+        }
+        .journal-row { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid #f0f0f0; font-size: 12px; }
+        .journal-name { width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .link-input { flex: 1; min-width: 0; padding: 6px 8px; border: 1px solid #d1d5db; border-radius: 6px; }
+        body.light .modal-panel { background: #fff; }
+    </style>
+</head>
+
+<body>
+    <div id="progressOverlay"><div class="progress-box"><span id="progressText">로그를 불러오는 중...</span><div class="progress-track"><div class="progress-fill"></div></div></div></div>
+    <div class="container">
+        <div class="sidebar">
+            <h2>껍질 미리-깐 코코포 로그 (완전판!)</h2>
+            <hr />
+            <label>
+                이전 로그 플러그인 HTML:
+                <input type="file" id="pluginHtmlInput" accept=".html,.htm" />
+            </label>
+            <label>
+                코코포리아 전체 내보내기 HTML:
+                <input type="file" id="htmlFileInput" accept=".html,.htm" />
+            </label>
+            <label>
+                저장 파일명(선택):
+                <input type="text" id="roomInput" placeholder="ccfolia-wrap" />
+            </label>
+            <button type="button" id="outputTabSettingsBtn">출력 탭 설정</button>
+
+            <div class="sidebar-tabs">
+                <button type="button" class="sidebar-tab active" data-target="tab-narrator">서술자 설정</button>
+                <button type="button" class="sidebar-tab" data-target="tab-style">스타일 설정</button>
+            </div>
+
+            <div id="tab-narrator" class="tab-panel">
+                <label>
+                    서술자 이름:
+                    <input type="text" id="narratorInput" placeholder="이름 정확히 입력" />
+                </label>
+                <label style="flex-direction: row; align-items: center; gap: 6px;">
+                    <input type="checkbox" id="removeNarratorItalicCheckbox" style="width:auto;" /> 서술자 기울임 제거
+                </label>
+            </div>
+
+            <div id="tab-style" class="tab-panel hidden">
+                <label style="flex-direction: row; align-items: center; gap: 6px;">
+                    패딩 (상하 px):
+                    <input type="number" id="paddingInput" value="16" min="0" />
+                    폰트 크기 (px):
+                    <input type="number" id="fontSizeInput" value="16" min="8" max="32" />
+                </label>
+                <div id="channelColorSettings">
+                    <!-- 동적으로 채널별 색상 설정이 추가됩니다 -->
+                </div>
+                <label style="flex-direction: row; align-items: center; gap: 6px;">
+                    <input type="checkbox" id="lightThemeToggle" /> 라이트 테마
+                </label>
+                <label style="flex-direction: row; align-items: center; gap: 6px;">
+                    <input type="checkbox" id="bubbleThemeToggle" checked /> info/other 말풍선 테마
+                </label>
+            </div>
+
+            <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 6px;">
+                <button id="applyStyleBtn">스타일 적용</button>
+                <button id="saveHTMLBtn">HTML 저장</button>
+                <button id="saveTxtBtn">TXT 저장</button>
+            </div>
+
+        </div>
+
+        <div class="preview" id="previewArea"></div>
+    </div>
+
+    <button id="globalDeleteBtn">✕</button>
+
+    <div id="outputTabModal" class="modal-overlay hidden">
+        <div class="modal-panel">
+            <div class="modal-header"><h3>출력 탭 설정</h3><button type="button" class="modal-close" id="outputTabModalClose">✕</button></div>
+            <div id="outputTabList" class="modal-list"></div>
+            <div id="outputTabDetail" class="modal-detail"><span style="color:#6b7280;font-size:12px;">탭을 선택하면 저널별 이미지 설정이 표시됩니다.</span></div>
+        </div>
+    </div>
+    <div id="journalImageModal" class="modal-overlay hidden">
+        <div class="modal-panel image-modal-panel">
+            <div class="modal-header"><h3>저널별 이미지 설정</h3><button type="button" class="modal-close" id="journalImageModalClose">✕</button></div>
+            <p id="journalImageModalNote" style="margin:0;color:#6b7280;font-size:12px;"></p>
+            <div id="journalImageList" class="image-modal-list"></div>
+        </div>
+    </div>
+
+    <script>
+        const previewArea = document.getElementById('previewArea');
+        const styleButton = document.getElementById('applyStyleBtn');
+        const paddingInput = document.getElementById('paddingInput');
+        const fontSizeInput = document.getElementById('fontSizeInput');
+
+        // 사이드바 탭 전환
+        const sidebarTabs = document.querySelectorAll('.sidebar-tab');
+        const tabPanels = document.querySelectorAll('.tab-panel');
+
+        sidebarTabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                const targetId = tab.getAttribute('data-target');
+
+                sidebarTabs.forEach(t => t.classList.remove('active'));
+                tabPanels.forEach(panel => {
+                    if (panel.id === targetId) {
+                        panel.classList.remove('hidden');
+                    } else {
+                        panel.classList.add('hidden');
+                    }
+                });
+
+                tab.classList.add('active');
+            });
+        });
+
+        // 전역 삭제 버튼 로직
+        const globalDeleteBtn = document.getElementById('globalDeleteBtn');
+        let currentHoverGap = null;
+
+        // 이벤트 위임 방식으로 변경
+        document.addEventListener('mouseover', (e) => {
+            const hovered = e.target.closest('.gap') || e.target.closest('.player.system');
+            if (hovered && previewArea.contains(hovered)) {
+                currentHoverGap = hovered;
+                const rect = hovered.getBoundingClientRect();
+                globalDeleteBtn.style.left = (rect.right - 30) + 'px';
+                globalDeleteBtn.style.top = (rect.top + 5) + 'px';
+                globalDeleteBtn.style.display = 'block';
+            } else if (!e.target.closest('#globalDeleteBtn')) {
+                // 버튼 위가 아니고 대상 위도 아니면 숨김
+                if (currentHoverGap && !currentHoverGap.contains(e.target)) {
+                    globalDeleteBtn.style.display = 'none';
+                    currentHoverGap = null;
+                }
+            }
+        });
+
+        globalDeleteBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (currentHoverGap) {
+                currentHoverGap.remove();
+                globalDeleteBtn.style.display = 'none';
+                currentHoverGap = null;
+            }
+        });
+
+        // 버튼 위에 마우스가 있을 때 버튼 유지
+        globalDeleteBtn.addEventListener('mouseenter', () => {
+            if (currentHoverGap) {
+                globalDeleteBtn.style.display = 'block';
+            }
+        });
+
+        // 라이트 테마 토글
+        const lightThemeToggle = document.getElementById('lightThemeToggle');
+        const bubbleThemeToggle = document.getElementById('bubbleThemeToggle');
+        let bubbleThemeEnabled = true;
+        let bubbleOriginalColors = {};
+        let bubbleCustomColors = new Set();
+        
+        // 저장된 채널 색상을 저장할 변수
+        let savedChannelColors = {};
+        
+        lightThemeToggle.addEventListener('change', () => {
+            if (lightThemeToggle.checked) {
+                // 현재 채널 색상 저장
+                const channelSet = new Set(window.allMessages.map(m => m.channel));
+                channelSet.forEach(channel => {
+                    const colorInput = document.getElementById(`channelColor_${channel}`);
+                    if (colorInput) {
+                        savedChannelColors[channel] = colorInput.value;
+                    }
+                });
+                
+                // 라이트 테마 색상으로 변경
+                channelSet.forEach(channel => {
+                    const colorInput = document.getElementById(`channelColor_${channel}`);
+                    if (colorInput) {
+                        // 메인 채널은 #f1f1f1, 이외는 #E3E3E3
+                        const lightColor = (channel.includes('info') || channel.includes('정보') || channel.includes('other'))
+                            ? mixHex('#f1f1f1', '#000000', 0.07)
+                            : ((channel.includes('메인') || channel.includes('main')) ? '#f1f1f1' : '#E3E3E3');
+                        colorInput.value = lightColor;
+                        channelColors[channel] = lightColor;
+                    }
+                });
+                
+                previewArea.classList.add('light');
+            } else {
+                // 저장된 원래 색상 복원
+                const channelSet = new Set(window.allMessages.map(m => m.channel));
+                channelSet.forEach(channel => {
+                    const colorInput = document.getElementById(`channelColor_${channel}`);
+                    if (colorInput && savedChannelColors[channel]) {
+                        colorInput.value = savedChannelColors[channel];
+                        channelColors[channel] = colorInput.value;
+                    }
+                });
+                
+                previewArea.classList.remove('light');
+            }
+            
+            // 메시지 다시 렌더링
+            if (window.allMessages && window.allMessages.length > 0) {
+                renderMessages();
+            }
+        });
+
+        bubbleThemeToggle.addEventListener('change', () => {
+            bubbleThemeEnabled = bubbleThemeToggle.checked;
+            if (window.allMessages?.length) {
+                const channels = [...new Set(window.allMessages.map(m => m.channel))].filter(channel => /info|정보|other/i.test(channel));
+                if (bubbleThemeEnabled) bubbleCustomColors.clear();
+                channels.forEach(channel => {
+                    const colorInput = document.getElementById(`channelColor_${channel}`);
+                    if (bubbleThemeEnabled) {
+                        if (colorInput) bubbleOriginalColors[channel] = colorInput.value;
+                        const color = mixHex(getMainChannelColor(), lightThemeToggle.checked ? '#000000' : '#ffffff', 0.07);
+                        if (colorInput) colorInput.value = color;
+                        channelColors[channel] = color;
+                    } else {
+                        const color = bubbleOriginalColors[channel] || (lightThemeToggle.checked ? '#E3E3E3' : '#3d3d3d');
+                        if (colorInput) colorInput.value = color;
+                        channelColors[channel] = color;
+                    }
+                });
+            }
+            saveSettings();
+            if (window.allMessages?.length) renderMessages();
+        });
+
+        function applyBubbleDefaultColors(force = false) {
+            const color = mixHex(getMainChannelColor(), lightThemeToggle.checked ? '#000000' : '#ffffff', 0.07);
+            [...new Set(window.allMessages.map(m => m.channel))]
+                .filter(channel => /info|정보|other/i.test(channel))
+                .forEach(channel => {
+                    if (!force && bubbleCustomColors.has(channel)) return;
+                    const colorInput = document.getElementById(`channelColor_${channel}`);
+                    if (colorInput) colorInput.value = color;
+                    channelColors[channel] = color;
+                });
+        }
+
+        // 스타일 적용 버튼
+        styleButton.addEventListener('click', () => {
+            // Firestore 메시지가 로드되어 있으면 다시 렌더링
+            if (window.allMessages && window.allMessages.length > 0) {
+                renderMessages();
+            } else {
+                // HTML 파일 로드 방식일 경우
+                applyStyleToPreviewArea();
+            }
+        });
+
+        function applyStyleToPreviewArea() {
+            const paddingValue = paddingInput.value || "16";
+            const doc = previewArea;
+            const narratorName = document.getElementById('narratorInput')?.value?.trim();
+
+            // 배경색
+            doc.querySelectorAll('.ccfolia_wrap').forEach(el => {
+                el.style.backgroundColor = '#1f1e22';
+            });
+
+            // SYSTEM 형식 변환
+            doc.querySelectorAll('.gap').forEach(old => {
+                const systemSpan = old.querySelector('span[style*="font-weight: bold"]');
+                if (!systemSpan || systemSpan.innerText.trim().toLowerCase() !== 'system') return;
+
+                const p = old.querySelector('p');
+                const spans = p.querySelectorAll('span');
+                const message = spans[spans.length - 1]?.innerText.trim();
+
+                const newDiv = document.createElement('div');
+                newDiv.className = 'player system';
+                newDiv.style.cssText = `
+          display: flex;
+          overflow: hidden;
+          padding: 0px;
+          border-top: 1px solid rgba(255, 255, 255, 0.08);
+          background: #33313b;
+          text-align: center;
+          justify-content: center;
+        `;
+
+                newDiv.innerHTML = `
+          <div class="infoWrap" style="display: none">
+            <div class="imgWrap" style="width: 40px;height: 40px;overflow: hidden;background-color: rgba(0, 0, 0, 0.31);float: left;border-radius: 5px"></div>
+          </div>
+          <div class="textWrap" style="float: left;line-height: 1.6;margin-left: 0;color: #FFFFFF;padding: 10px 20px">
+            <p class="Uname" style="margin: 0px 0px 6px 0px;font-weight: 800;color: #858296;font-size: 13px;letter-spacing: 1px;padding: 3px 8px;border-radius: 15px;background: #000000">system</p>
+            <p class="Utext" style="margin: 0;font-weight: 400;color: #908e9a;font-size: 15px;letter-spacing: -1px">${message}</p>
+          </div>
+        `;
+                old.replaceWith(newDiv);
+            });
+
+            // 패딩 적용
+            doc.querySelectorAll('.gap').forEach(el => {
+                if (!el.querySelector('.msg_container')) {
+                    el.style.padding = `${paddingValue}px 16px`;
+                }
+            });
+
+            // 더블클릭 편집
+            doc.querySelectorAll('.gap span').forEach(span => {
+                span.addEventListener('click', () => {
+                    span.setAttribute('contenteditable', 'true');
+                    span.focus();
+                });
+                span.addEventListener('blur', () => {
+                    span.removeAttribute('contenteditable');
+                });
+                span.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        if (e.shiftKey) {
+                            // Shift+Enter: 줄바꿈 허용
+                            return;
+                        } else {
+                            // Enter만: 편집 완료
+                            e.preventDefault();
+                            span.blur();
+                        }
+                    }
+                });
+            });
+
+            if (narratorName) applyNarratorMode(narratorName);
+        }
+
+        const saveButton = document.getElementById('saveHTMLBtn');
+        saveButton.addEventListener('click', () => {
+            const wrap = previewArea.querySelector('.ccfolia_wrap');
+            if (!wrap) {
+                alert('.ccfolia_wrap 요소를 찾을 수 없습니다.');
+                return;
+            }
+
+
+            const doctype = '<!DOCTYPE html>';
+            const htmlOpen = '<html lang="en">';
+            const htmlClose = '</html>';
+            const head = `
+    <head>
+      <meta charset="UTF-8">
+      <title>ccfolia-wrap Export</title>
+      <style>
+
+    .ccfolia_wrap p{
+    margin: 0;
+    white-space: pre-wrap;
+    }
+
+    .ccfolia_wrap b{
+    color: gray;
+        font-size: 9pt;
+        font-weight: 200;
+    }
+
+    .ccfolia_wrap span, .ccfolia_wrap b {
+        font-size: 16px;
+        font-family: 'Arial', sans-serif;
+        line-height: 1.5;
+        white-space: pre-wrap;
+    }
+
+    b {
+        font-weight: bold;
+    }
+
+    .ccfolia_wrap {
+    position: relative;
+    background-color: #2c2c2cde;
+    color: #fefefe;
+    }
+    .msg_container {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    overflow: hidden;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    }
+
+    .msg_container img {
+    width: 40px;
+    }
+
+    span:before {
+    display: none !important ;
+    }
+
+
+    .gap{
+    gap: 15px;
+    display: flex;
+    -webkit-box-pack: start;
+    justify-content: flex-start;
+    align-items: flex-start;
+    position: relative;
+    text-decoration: none;
+    width: 100%;
+    box-sizing: border-box;
+    text-align: left;
+    padding: 16px 16px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+
+        hr{
+            display: none;
+        }
+
+        .secret-badge {
+            display: inline-block;
+            background-color: #ffffff2b;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: normal;
+            position: absolute;
+            right: 16px;
+            top: 8px;
+            z-index: 10;
+        }
+
+        .ccfolia_wrap.light .secret-badge {
+            background-color: #0000002b;
+            color: #111827;
+        }
+
+        /* Light theme overrides */
+        .ccfolia_wrap.light {
+            background-color: #f9fafb !important;
+        }
+
+        .ccfolia_wrap.light .gap {
+            border-top-color: rgba(0, 0, 0, 0.1);
+        }
+
+        .ccfolia_wrap.light p,
+        .ccfolia_wrap.light span {
+            color: #575757 !important;
+        }
+
+        .ccfolia_wrap.light .msg_container {
+            background: transparent !important;
+        }
+
+        .ccfolia_wrap.light .player.system {
+            background: rgb(0 0 0 / 4%) !important;
+            border-top-color: rgba(0, 0, 0, 0.1) !important;
+        }
+
+        .ccfolia_wrap.light .player.system .Uname {
+            background: #0000001c !important;
+            color: #5a6671 !important;
+        }
+
+        .ccfolia_wrap.light .player.system .Utext {
+            color: #4b5563 !important;
+        }
+      </style>
+    </head>
+  `;
+
+            const isLightTheme = document.getElementById('lightThemeToggle').checked;
+            if (isLightTheme) {
+                wrap.classList.add('light');
+            }
+            const body = `<body>${wrap.outerHTML}</body>`;
+            if (isLightTheme) {
+                wrap.classList.remove('light');
+            }
+
+            const fullHtml = `${doctype}\n${htmlOpen}\n${head}\n${body}\n${htmlClose}`;
+
+            const blob = new Blob([fullHtml], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            const roomIdForName = document.getElementById('roomInput').value.trim();
+            const filename = roomIdForName || 'ccfolia-wrap';
+
+            a.download = filename + '.html';
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+
+
+        // 텍스트 저장
+        const saveTxtBtn = document.getElementById('saveTxtBtn');
+        saveTxtBtn.addEventListener('click', () => {
+            const wrap = previewArea.querySelector('.ccfolia_wrap');
+            if (!wrap) {
+                alert('.ccfolia_wrap 요소를 찾을 수 없습니다.');
+                return;
+            }
+
+            const doctype = '<!DOCTYPE html>';
+            const htmlOpen = '<html lang="en">';
+            const htmlClose = '</html>';
+            const head = `
+    <head>
+      <meta charset="UTF-8">
+      <title>ccfolia-wrap Export</title>
+      <style>
+
+    .ccfolia_wrap p{
+    margin: 0;
+    white-space: pre-wrap;
+    }
+
+    .ccfolia_wrap b{
+    color: gray;
+        font-size: 9pt;
+        font-weight: 200;
+    }
+
+    .ccfolia_wrap span, .ccfolia_wrap b {
+        font-size: 16px;
+        font-family: 'Arial', sans-serif;
+        line-height: 1.5;
+        white-space: pre-wrap;
+    }
+
+    b {
+        font-weight: bold;
+    }
+
+    .ccfolia_wrap {
+    position: relative;
+    background-color: #2c2c2cde;
+    color: #fefefe;
+    }
+    .msg_container {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    overflow: hidden;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    }
+
+    .msg_container img {
+    width: 40px;
+    }
+
+    span:before {
+    display: none !important ;
+    }
+
+
+    .gap{
+    gap: 15px;
+    display: flex;
+    -webkit-box-pack: start;
+    justify-content: flex-start;
+    align-items: flex-start;
+    position: relative;
+    text-decoration: none;
+    width: 100%;
+    box-sizing: border-box;
+    text-align: left;
+    padding: 16px 16px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+
+        hr{
+            display: none;
+        }
+
+        .secret-badge {
+            display: inline-block;
+            background-color: #ffffff2b;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: normal;
+            position: absolute;
+            right: 16px;
+            top: 8px;
+            z-index: 10;
+        }
+
+        .ccfolia_wrap.light .secret-badge {
+            background-color: #0000002b;
+            color: #111827;
+        }
+
+        /* Light theme overrides */
+        .ccfolia_wrap.light {
+            background-color: #f9fafb !important;
+        }
+
+        .ccfolia_wrap.light .gap {
+            border-top-color: rgba(0, 0, 0, 0.1);
+        }
+
+        .ccfolia_wrap.light p,
+        .ccfolia_wrap.light span {
+            color: #575757 !important;
+        }
+
+        .ccfolia_wrap.light .msg_container {
+            background: transparent !important;
+        }
+
+        .ccfolia_wrap.light .player.system {
+            background: rgb(0 0 0 / 4%) !important;
+            border-top-color: rgba(0, 0, 0, 0.1) !important;
+        }
+
+        .ccfolia_wrap.light .player.system .Uname {
+            background: #0000001c !important;
+            color: #5a6671 !important;
+        }
+
+        .ccfolia_wrap.light .player.system .Utext {
+            color: #4b5563 !important;
+        }
+      </style>
+    </head>
+  `;
+
+            const isLightTheme = document.getElementById('lightThemeToggle').checked;
+            if (isLightTheme) {
+                wrap.classList.add('light');
+            }
+            const body = `<body>${wrap.outerHTML}</body>`;
+            if (isLightTheme) {
+                wrap.classList.remove('light');
+            }
+
+            const fullHtml = `${doctype}\n${htmlOpen}\n${head}\n${body}\n${htmlClose}`;
+            const blob = new Blob([fullHtml], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            const roomIdForName = document.getElementById('roomInput').value.trim();
+            const filename = roomIdForName || 'ccfolia-wrap';
+
+            a.download = filename + '.txt';
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+
+
+
+        async function loadFirestoreMessages() {
+            const roomId = document.getElementById('roomInput').value.trim();
+            if (!roomId) return alert('룸 ID를 입력해주세요.');
+
+            const url = `https://firestore.googleapis.com/v1/projects/ccfolia-160aa/databases/(default)/documents/rooms/${roomId}/messages/?pageSize=1000`;
+
+            try {
+                const res = await fetch(url);
+                const json = await res.json();
+                if (!json.documents) {
+                    previewArea.innerHTML = '<p style="color:red;">메시지를 불러올 수 없습니다.</p>';
+                    return;
+                }
+
+                allMessages = json.documents.map(doc => {
+                    const f = doc.fields;
+                    return {
+                        name: f.name?.stringValue ?? "이름 없음",
+                        text: f.text?.stringValue ?? "",
+                        icon: f.iconUrl?.stringValue ?? "",
+                        color: f.color?.stringValue ?? "#ccc",
+                        channel: f.channelName?.stringValue ?? "기타"
+                    };
+                });
+
+                renderChannelFilter();
+                renderMessages(); // 전체 표시
+            } catch (e) {
+                console.error(e);
+                previewArea.innerHTML = `<p style="color:red;">에러: ${e.message}</p>`;
+            }
+        }
+
+        function renderChannelFilter() {
+            const channelSet = new Set(allMessages.map(m => m.channel));
+            const html = ['<button onclick="renderMessages(null)">전체</button>']
+                .concat([...channelSet].map(ch =>
+                    `<button onclick="renderMessages('${ch}')">${ch}</button>`))
+                .join('');
+            const unusedFilterMarkup = html;
+        }
+
+        function renderMessages(filterChannel = null) {
+            const target = document.createElement('div');
+            target.className = 'ccfolia_wrap';
+
+            const filtered = filterChannel
+                ? allMessages.filter(m => m.channel === filterChannel)
+                : allMessages;
+
+            filtered.forEach(m => {
+                const gap = document.createElement('div');
+                gap.className = 'gap';
+                gap.dataset.channel = m.channel;
+
+                const iconHTML = m.icon
+                    ? `<div class="msg_container"><img src="${m.icon}" alt="icon"></div>`
+                    : '';
+
+                const messageHTML = `
+      ${iconHTML}
+      <div>
+        <span style="color:${m.color}; font-weight:bold;">${m.name}</span><br/>
+        <span>${m.text}</span>
+      </div>
+    `;
+                gap.innerHTML = messageHTML;
+
+                const hr = document.createElement('hr');
+                // 명시적 스타일 지정
+                hr.style.margin = '0px';
+                hr.style.padding = '0px';
+                hr.style.borderWidth = '1px 0px 0px';
+                hr.style.flexShrink = '0';
+                hr.style.borderTopStyle = 'solid';
+                hr.style.borderTopColor = 'rgba(255, 255, 255, 0.08)';
+                hr.style.display = 'block';
+                target.appendChild(hr);
+                target.appendChild(gap);
+            });
+
+            previewArea.innerHTML = '';
+            previewArea.appendChild(target);
+            applyStyleToPreviewArea();
+
+        }
+
+
+        window.allMessages = [];
+        window.selectedChannels = new Set();
+
+        async function loadFirestoreMessages() {
+            const rawInput = document.getElementById('roomInput').value.trim();
+            const roomId = extractRoomId(rawInput);
+            if (!roomId) return alert('룸 ID를 입력해주세요.');
+
+            const baseUrl = `https://firestore.googleapis.com/v1/projects/ccfolia-160aa/databases/(default)/documents/rooms/${roomId}/messages`;
+
+            let allDocs = [];
+            let pageToken = null;
+            let page = 1;
+
+            // 진행 상황 표시 영역
+            previewArea.innerHTML = '<p style="color:#888;padding:20px;">메시지를 불러오는 중...</p>';
+
+            try {
+                while (true) {
+                    const url = new URL(baseUrl);
+                    url.searchParams.set('pageSize', '1000');
+                    if (pageToken) {
+                        url.searchParams.set('pageToken', pageToken);
+                    }
+
+                    const res = await fetch(url.toString());
+                    const json = await res.json();
+
+                    if (json.documents) {
+                        allDocs = allDocs.concat(json.documents);
+                        // 진행 상황 업데이트
+                        previewArea.innerHTML = `<p style="color:#888;padding:20px;">페이지 ${page} 로딩 중... (${allDocs.length}개 메시지)</p>`;
+                    }
+
+                    if (!json.nextPageToken) break;
+                    pageToken = json.nextPageToken;
+                }
+
+                if (allDocs.length === 0) {
+                    previewArea.innerHTML = '<p style="color:red;">메시지를 불러올 수 없습니다.</p>';
+                    return;
+                }
+
+                const sorted = allDocs.sort((a, b) => {
+                    const aTime = a.fields.createdAt?.timestampValue || '';
+                    const bTime = b.fields.createdAt?.timestampValue || '';
+                    return new Date(aTime) - new Date(bTime); // 오래된 → 최신
+                });
+
+                window.allMessages = sorted.map(doc => {
+                    const f = doc.fields;
+
+                    // 주사위 결과 추출 시도
+                    let rollResult = "";
+                    try {
+                        rollResult = f.extend?.mapValue?.fields?.roll?.mapValue?.fields?.result?.stringValue || "";
+                    } catch (e) {
+                        rollResult = "";
+                    }
+
+                    // 채널명 정규화: "メイン"을 "메인"으로 통일
+                    let channelName = f.channelName?.stringValue ?? "기타";
+                    if (channelName === "メイン") {
+                        channelName = "메인";
+                    }
+
+                    // 포트레이트 우선순위: extend.portrait.url > iconUrl
+                    let iconUrl = "";
+                    try {
+                        iconUrl = f.extend?.mapValue?.fields?.portrait?.mapValue?.fields?.url?.stringValue
+                            || f.iconUrl?.stringValue
+                            || "";
+                    } catch (e) {
+                        iconUrl = f.iconUrl?.stringValue ?? "";
+                    }
+
+                    return {
+                        name: f.name?.stringValue ?? "이름 없음",
+                        text: f.text?.stringValue + (rollResult ? ` > ${rollResult}` : "") ?? "",
+                        icon: iconUrl,
+                        color: f.color?.stringValue ?? "#ccc",
+                        channel: channelName
+                    };
+                });
+
+                // 초기 로딩 시 메인 채널만 선택
+                window.selectedChannels = new Set(["메인"]);
+                renderChannelFilter();
+                createChannelColorSettings();
+                renderMessages();
+
+            } catch (e) {
+                console.error(e);
+                previewArea.innerHTML = `<p style="color:red;">에러 발생: ${e.message}</p>`;
+            }
+        }
+
+        function renderChannelFilter() {
+            const channelSet = new Set(window.allMessages.map(m => m.channel));
+            const filterDiv = document.createElement('div');
+            filterDiv.innerHTML = '';
+
+            // 전체 버튼
+            const allBtn = document.createElement('button');
+            allBtn.textContent = '전체';
+            allBtn.onclick = () => toggleAllChannels();
+            if (window.selectedChannels.size === 0) {
+                allBtn.classList.add('active');
+            }
+            filterDiv.appendChild(allBtn);
+
+            // 각 채널 버튼
+            [...channelSet].forEach(ch => {
+                const btn = document.createElement('button');
+                btn.textContent = ch;
+                btn.onclick = () => toggleChannel(ch);
+                if (window.selectedChannels.has(ch)) {
+                    btn.classList.add('active');
+                }
+                filterDiv.appendChild(btn);
+            });
+        }
+
+        function toggleAllChannels() {
+            if (window.selectedChannels.size === 0) {
+                // 이미 전체가 선택되어 있으면 아무것도 안함
+                return;
+            }
+            window.selectedChannels.clear();
+            renderChannelFilter();
+            renderMessages();
+        }
+
+        function toggleChannel(channel) {
+            if (window.selectedChannels.has(channel)) {
+                window.selectedChannels.delete(channel);
+            } else {
+                window.selectedChannels.add(channel);
+            }
+            renderChannelFilter();
+            renderMessages();
+        }
+
+        function renderMessages() {
+            const target = document.createElement('div');
+            target.className = 'ccfolia_wrap';
+
+            // 선택된 채널이 없으면 전체 표시
+            const filtered = window.selectedChannels.size === 0
+                ? window.allMessages
+                : window.allMessages.filter(m => window.selectedChannels.has(m.channel));
+
+            const narratorName = document.getElementById('narratorInput')?.value?.trim();
+            const removeItalic = document.getElementById('removeNarratorItalicCheckbox')?.checked;
+            const paddingValue = paddingInput.value || "16";
+            const fontSizeValue = fontSizeInput.value || "16";
+
+            // 메인 컨테이너 배경색 설정 (첫 번째 메시지의 채널 색상 사용)
+            if (filtered.length > 0) {
+                const firstChannel = filtered[0].channel;
+                const mainColor = getChannelColor(firstChannel);
+                target.style.backgroundColor = bubbleThemeEnabled ? getMainChannelColor() : mainColor;
+            }
+
+            filtered.forEach(m => {
+                // 동적 채널별 배경색 가져오기
+                const channelBackgroundColor = getChannelColor(m.channel);
+
+                // SYSTEM 메시지 처리
+                if (m.name.toLowerCase() === 'system') {
+                    const systemDiv = document.createElement('div');
+                    systemDiv.className = 'player system';
+                    systemDiv.dataset.channel = m.channel;
+                    systemDiv.style.cssText = `
+                                display: flex;
+                                overflow: hidden;
+                                padding: 0px;
+                                border-top: 1px solid rgba(255, 255, 255, 0.08);
+                                background: ${channelBackgroundColor};
+                                text-align: center;
+                                justify-content: center;
+                            `;
+
+                    systemDiv.innerHTML = `
+                                <div class="infoWrap" style="display: none">
+                                    <div class="imgWrap" style="width: 40px;height: 40px;overflow: hidden;background-color: rgba(0, 0, 0, 0.31);float: left;border-radius: 5px"></div>
+                                </div>
+                                <div class="textWrap" style="float: left;line-height: 1.6;margin-left: 0;color: #FFFFFF;padding: 10px 20px">
+                                    <p class="Uname" style="margin: 0px 0px 6px 0px;font-weight: 800;color: #858296;font-size: 13px;letter-spacing: 1px;padding: 3px 8px;border-radius: 15px;background: #000000">system</p>
+                                    <p class="Utext" style="margin: 0;font-weight: 400;color: #908e9a;font-size: 15px;letter-spacing: -1px">${m.text}</p>
+                                </div>
+                            `;
+                    target.appendChild(systemDiv);
+                    return;
+                }
+
+                const gap = document.createElement('div');
+                gap.className = 'gap';
+                gap.dataset.channel = m.channel;
+
+                // info/other는 서술자 설정을 사용하지 않는다. 포트레이트는 옵션으로 허용한다.
+                const plainChannel = /info|정보|other/i.test(m.channel);
+                const isOther = /other/i.test(m.channel);
+                const cardBackgroundColor = plainChannel && bubbleThemeEnabled ? getMainChannelColor() : channelBackgroundColor;
+                const bubbleColor = plainChannel && bubbleThemeEnabled ? channelBackgroundColor : cardBackgroundColor;
+                if (plainChannel) {
+                    gap.style.setProperty('--main-card-color', cardBackgroundColor);
+                    gap.style.setProperty('--bubble-color', bubbleColor);
+                    if (bubbleThemeEnabled) gap.classList.add('bubble-themed');
+                }
+                if (/info|정보/i.test(m.channel)) gap.classList.add('info-message');
+                else if (isOther) gap.classList.add('other-message');
+                const isCompactOther = isOther && tabSettings.get(m.channel)?.compact;
+                const isNarrator = !!narratorName && m.name === narratorName && /main|메인/i.test(m.channel);
+                const useBubbleSurface = plainChannel && bubbleThemeEnabled;
+                const bubbleSurface = useBubbleSurface ? document.createElement('div') : gap;
+                if (useBubbleSurface) bubbleSurface.className = 'bubble-surface';
+
+                if (isCompactOther) {
+                    gap.classList.add('other-compact');
+                    const name = document.createElement('span'); name.className = 'compact-name'; name.textContent = m.name; name.style.setProperty('color', m.color || '#ccc', 'important');
+                    const text = document.createElement('span'); text.className = 'compact-text'; text.textContent = `: ${m.text}`;
+                    bubbleSurface.append(name, text);
+                    if (useBubbleSurface) gap.appendChild(bubbleSurface);
+                    target.appendChild(gap); return;
+                }
+
+                if (isNarrator) {
+                    // 서술자 스타일
+                    const fontStyleValue = removeItalic ? 'normal' : 'italic';
+                    gap.style.cssText = `display: flow-root; background-color: ${channelBackgroundColor}; position: relative; padding: 2px 16px; text-align: center;`;
+
+                    const p = document.createElement('p');
+                    p.style.cssText = `color: rgb(221, 221, 221); display: flow-root; width: 100%; font-style: ${fontStyleValue}; font-weight: bold; text-align: center; margin: 7px !important;`;
+
+                    const spanText = document.createElement('span');
+                    spanText.innerHTML = m.text.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])).replace(/\n/g, '<br>');
+                    spanText.style.fontSize = `${fontSizeValue}px`;
+                    p.appendChild(spanText);
+                    gap.appendChild(p);
+                } else {
+                    // 일반 메시지 스타일
+                    gap.style.cssText = `display: flex; background-color: ${cardBackgroundColor}; position: relative; padding: ${paddingValue}px 16px;`;
+                    if (plainChannel) {
+                        gap.style.setProperty('--main-card-color', cardBackgroundColor);
+                        gap.style.setProperty('--bubble-color', bubbleColor);
+                    }
+
+                    if (!isCompactOther && tabSettings.get(m.channel)?.portrait !== false) {
+                        const msgContainer = document.createElement('div');
+                        msgContainer.className = 'msg_container';
+                        if (m.icon) {
+                            const img = document.createElement('img');
+                            img.src = m.icon;
+                            img.alt = m.name;
+                            img.style.cssText = 'width: 40px; height: 40px; object-fit: cover; object-position: top center; border-radius: 5px;';
+                            msgContainer.appendChild(img);
+                        }
+                        bubbleSurface.appendChild(msgContainer);
+                    }
+
+                    const p = document.createElement('p');
+                    p.style.color = 'rgb(221, 221, 221)';
+
+                    const spanEmpty = document.createElement('span');
+                    const spanName = document.createElement('span');
+                    spanName.textContent = m.name;
+                    // 라이트 테마의 .light span { color !important } 보다 우선하도록 인라인 !important
+                    spanName.style.setProperty('color', m.color, 'important');
+                    spanName.style.fontWeight = 'bold';
+                    spanName.style.fontSize = `${fontSizeValue}px`;
+
+                    const spanBr = document.createElement('span');
+                    spanBr.innerHTML = '<br>';
+
+                    const spanText = document.createElement('span');
+                    spanText.innerHTML = m.text.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])).replace(/\n/g, '<br>');
+                    spanText.style.fontSize = `${fontSizeValue}px`;
+
+                    p.appendChild(spanEmpty);
+                    p.appendChild(spanName);
+                    p.appendChild(spanBr);
+                    p.appendChild(spanText);
+                    bubbleSurface.appendChild(p);
+
+                    // 비밀 채널 메시지에 (비밀) 뱃지 추가
+                    // 더 유연한 채널명 매칭 (공백 제거, 대소문자 무시)
+                    const normalizedChannel = m.channel.replace(/\s+/g, '').toLowerCase();
+                    if (normalizedChannel === '비밀' || normalizedChannel === 'secret' || m.channel.includes('비밀')) {
+                        const secretBadge = document.createElement('span');
+                        secretBadge.className = 'secret-badge';
+                        secretBadge.textContent = '귓속말';
+                        secretBadge.style.fontSize = `${parseInt(fontSizeValue)-3}px`;
+                        bubbleSurface.appendChild(secretBadge);
+                    }
+                    // 채널 뱃지는 출력 탭 설정 팝업에서만 관리
+                    if (tabSettings.get(m.channel)?.badge) {
+                        const channelBadge = document.createElement('span');
+                        channelBadge.className = 'secret-badge';
+                        channelBadge.textContent = m.channel;
+                        channelBadge.style.fontSize = `${parseInt(fontSizeValue) - 3}px`;
+                        bubbleSurface.appendChild(channelBadge);
+                    }
+                    if (useBubbleSurface) gap.appendChild(bubbleSurface);
+                }
+
+                target.appendChild(gap);
+            });
+
+            previewArea.innerHTML = '';
+            previewArea.appendChild(target);
+            applyPreviewTabVisibility();
+
+            // 편집 기능 추가
+            previewArea.querySelectorAll('.gap span').forEach(span => {
+                span.addEventListener('click', () => {
+                    span.setAttribute('contenteditable', 'true');
+                    span.focus();
+                });
+                span.addEventListener('blur', () => {
+                    span.removeAttribute('contenteditable');
+                });
+                span.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        if (e.shiftKey) {
+                            // Shift+Enter: 줄바꿈 허용
+                            return;
+                        } else {
+                            // Enter만: 편집 완료
+                            e.preventDefault();
+                            span.blur();
+                        }
+                    }
+                });
+            });
+        }
+
+        // ✱ 서술자 지정 기능
+        // ✱ 서술자 지정 기능 (텍스트 유지)
+        function applyNarratorMode(name) {
+            const removeItalic = document.getElementById('removeNarratorItalicCheckbox')?.checked;
+            const fontStyleValue = removeItalic ? 'normal' : 'italic';
+
+            const divs = document.querySelectorAll('.gap');
+            divs.forEach(div => {
+                const nameSpan = div.querySelector('p span:nth-child(2)');
+                const textSpan = div.querySelector('p span:last-child');
+                if (nameSpan && nameSpan.textContent.trim() === name && /main|메인/i.test(div.dataset.channel || '')) {
+                    const originalText = textSpan ? textSpan.innerHTML : "";
+
+                    div.innerHTML = `
+        <p style="color: rgb(221, 221, 221); display: flow-root; font-style: ${fontStyleValue}; font-weight: bold; text-align: center; margin: 8px;">
+          <span></span> <span style="color: rgb(136, 136, 136);"></span><span></span><span>${originalText}</span>
+        </p>
+      `;
+                    div.style.display = 'flow-root';
+                    div.style.backgroundColor = 'transparent';
+                    div.style.padding = '2px 16px';
+                }
+            });
+        }
+
+
+        // 채널별 색상 설정 생성
+        function createChannelColorSettings() {
+            const channelSet = new Set(window.allMessages.map(m => m.channel));
+            const container = document.getElementById('channelColorSettings');
+            container.innerHTML = '';
+            channelColors = {};
+
+            // 기본 색상 설정
+            const defaultColors = {
+                '메인': '#1f1e22',
+                '비밀': '#3d3d3d',
+                '사담': '#3d3d3d',
+                '기타': '#3d3d3d',
+                'info': '#3d3d3d',
+                '정보': '#3d3d3d'
+            };
+
+            channelSet.forEach(channel => {
+                // 채널명에 특정 키워드가 포함된 경우 해당 색상 적용
+                let colorKey = '기타'; // 기본값
+                if (channel.includes('메인') || channel.includes('main')) {
+                    colorKey = '메인';
+                } else if (channel.includes('비밀')) {
+                    colorKey = '비밀';
+                    // 비밀은 귓속말 뱃지 자동 표시, 체크박스 불필요
+                } else if (channel.includes('사담') || channel.includes('other')) {
+                    colorKey = '사담';
+                } else if (channel.includes('info') || channel.includes('정보')) {
+                    colorKey = 'info';
+                }
+
+                const label = document.createElement('label');
+                label.style.cssText = 'flex-direction: row; align-items: center; gap: 6px;';
+                label.dataset.channel = channel;
+
+                const baseColor = lightThemeToggle.checked
+                    ? ((channel.includes('메인') || channel.includes('main')) ? '#f1f1f1' : '#E3E3E3')
+                    : (defaultColors[colorKey] || '#3d3d3d');
+                const isBubbleChannel = /info|정보|other/i.test(channel);
+                const bubbleBaseColor = lightThemeToggle.checked ? '#f1f1f1' : '#1f1e22';
+                const defaultColor = isBubbleChannel && bubbleThemeEnabled
+                    ? mixHex(bubbleBaseColor, lightThemeToggle.checked ? '#000000' : '#ffffff', 0.07)
+                    : baseColor;
+
+                label.innerHTML = `
+                    ${channel}:
+                    <input type="color" id="channelColor_${channel}" value="${defaultColor}" />
+                `;
+                label.querySelector('input[type="color"]').dataset.channel = channel;
+                container.appendChild(label);
+            });
+
+            // 저장된 채널 설정 복원 후, 변경 시 자동 저장 리스너 등록
+            restoreChannelSettings();
+            if (lightThemeToggle.checked) {
+                channelSet.forEach(channel => {
+                    const colorInput = [...container.querySelectorAll('input[type="color"]')].find(x => x.dataset.channel === channel);
+                    if (!colorInput) return;
+                    colorInput.value = /info|정보|other/i.test(channel)
+                        ? mixHex('#f1f1f1', '#000000', 0.07)
+                        : (/main|메인/i.test(channel) ? '#f1f1f1' : '#E3E3E3');
+                });
+            }
+            channelSet.forEach(channel => {
+                const colorInput = [...container.querySelectorAll('input[type="color"]')].find(x => x.dataset.channel === channel);
+                if (colorInput) {
+                    channelColors[channel] = colorInput.value;
+                    colorInput.addEventListener('input', () => {
+                        channelColors[channel] = colorInput.value;
+                        if (/info|정보|other/i.test(channel)) bubbleCustomColors.add(channel);
+                        else if (/main|메인/i.test(channel) && bubbleThemeEnabled) applyBubbleDefaultColors();
+                        renderMessages();
+                    });
+                }
+                document.getElementById(`channelColor_${channel}`)?.addEventListener('change', saveChannelSettings);
+            });
+            syncStyleChannelVisibility();
+        }
+
+        // Firestore 메시지 불러오기 시 주소에서 ID 추출
+        function extractRoomId(input) {
+            const match = input.match(/rooms\/([\w-]+)/);
+            return match ? match[1] : input.trim();
+        }
+
+        // ─── 설정 저장/불러오기 (localStorage) ───────────────────────────
+        const SETTINGS_KEY = 'ccfolia_settings';
+        const CHANNEL_SETTINGS_KEY = 'ccfolia_channel_settings';
+
+        function saveSettings() {
+            const s = {
+                narratorName: document.getElementById('narratorInput')?.value ?? '',
+                removeItalic: document.getElementById('removeNarratorItalicCheckbox')?.checked ?? false,
+                padding: document.getElementById('paddingInput')?.value ?? '16',
+                fontSize: document.getElementById('fontSizeInput')?.value ?? '16',
+                lightTheme: document.getElementById('lightThemeToggle')?.checked ?? false,
+                bubbleTheme: document.getElementById('bubbleThemeToggle')?.checked ?? true,
+            };
+            localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
+        }
+
+        function loadSettings() {
+            const raw = localStorage.getItem(SETTINGS_KEY);
+            if (!raw) return;
+            try {
+                const s = JSON.parse(raw);
+                if (s.narratorName != null) document.getElementById('narratorInput').value = s.narratorName;
+                document.getElementById('removeNarratorItalicCheckbox').checked = s.removeItalic ?? false;
+                if (s.padding != null) document.getElementById('paddingInput').value = s.padding;
+                if (s.fontSize != null) document.getElementById('fontSizeInput').value = s.fontSize;
+                const lightToggle = document.getElementById('lightThemeToggle');
+                lightToggle.checked = s.lightTheme ?? false;
+                bubbleThemeToggle.checked = s.bubbleTheme ?? true;
+                bubbleThemeEnabled = bubbleThemeToggle.checked;
+                if (lightToggle.checked) previewArea.classList.add('light');
+            } catch (e) {
+                console.warn('설정 불러오기 실패:', e);
+            }
+        }
+
+        function saveChannelSettings() {
+            const channelSet = new Set(window.allMessages.map(m => m.channel));
+            const s = {};
+            channelSet.forEach(channel => {
+                s[channel] = {
+                    color: document.getElementById(`channelColor_${channel}`)?.value,
+                };
+            });
+            localStorage.setItem(CHANNEL_SETTINGS_KEY, JSON.stringify(s));
+        }
+
+        function restoreChannelSettings() {
+            const raw = localStorage.getItem(CHANNEL_SETTINGS_KEY);
+            if (!raw) return;
+            try {
+                const s = JSON.parse(raw);
+                Object.entries(s).forEach(([channel, cs]) => {
+                    const colorEl = document.getElementById(`channelColor_${channel}`);
+                    if (colorEl && cs.color) colorEl.value = cs.color;
+                });
+            } catch (e) {
+                console.warn('채널 설정 불러오기 실패:', e);
+            }
+        }
+
+        // 정적 입력 자동 저장
+        ['narratorInput', 'paddingInput', 'fontSizeInput'].forEach(id => {
+            document.getElementById(id)?.addEventListener('input', saveSettings);
+        });
+        ['removeNarratorItalicCheckbox', 'lightThemeToggle'].forEach(id => {
+            document.getElementById(id)?.addEventListener('change', saveSettings);
+        });
+
+        loadSettings();
+
+        // ─── HTML 업로드 → 파싱 (확장 뷰어 출력 형식) ───────────────
+        // 편집 완료 표식 제거
+        const stripEdited = (s) => (s || '').replace(/(\s*\[편집\s*완료\])+\s*$/, '').trim();
+
+        function parseViewerHTML(htmlString) {
+            const doc = new DOMParser().parseFromString(htmlString, 'text/html');
+            // 신규 경량 구조(.m) 우선, 없으면 레거시(.MUI [data-index]) 폴백
+            const compact = doc.querySelectorAll('.m');
+            const msgs = [];
+
+            if (compact.length) {
+                compact.forEach(x => {
+                    const nm = x.querySelector('.nm');
+                    let name = '', color = '';
+                    if (nm) {
+                        for (const n of nm.childNodes) if (n.nodeType === 3) name += n.textContent;
+                        name = name.trim();
+                        color = nm.style.color || '';
+                    }
+                    const tx = x.querySelector('.tx');
+                    let text = '';
+                    if (tx) {
+                        const clone = tx.cloneNode(true);
+                        clone.querySelectorAll('br').forEach(br => br.replaceWith('\n'));
+                        text = stripEdited(clone.textContent);
+                    }
+                    const img = x.querySelector('img.av') || x.querySelector('img');
+                    const icon = img ? (img.getAttribute('src') || '') : '';
+                    if (x.classList.contains('sys') || name.toLowerCase() === 'system') {
+                        msgs.push({ name: 'system', text, icon: '', color: '#ccc', channel: '메인' });
+                        return;
+                    }
+                    if (!name) name = icon ? '이름 없음' : 'system';
+                    if (text === '') return;
+                    msgs.push({ name, text, icon, color: color || '#ccc', channel: '메인' });
+                });
+                return msgs;
+            }
+
+            // 레거시 구조
+            const items = doc.querySelectorAll('[data-index]');
+            items.forEach(x => {
+                const h6 = x.querySelector('h6');
+                let name = '', color = '';
+                if (h6) {
+                    for (const n of h6.childNodes) if (n.nodeType === 3) name += n.textContent;
+                    name = name.trim();
+                    color = h6.style.color || '';
+                }
+                const p = x.querySelector('p');
+                const text = stripEdited(p ? p.textContent : '');
+                const img = x.querySelector('.MuiListItemAvatar-root img') || x.querySelector('img');
+                const icon = img ? (img.getAttribute('src') || '') : '';
+                if (!name) name = icon ? '이름 없음' : 'system';
+                if (text === '' && name.toLowerCase() !== 'system') return;
+                msgs.push({ name, text, icon, color: color || '#ccc', channel: '메인' });
+            });
+            return msgs;
+        }
+
+        function loadFromHTMLFile(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const msgs = parseViewerHTML(e.target.result);
+                    if (!msgs.length) {
+                        previewArea.innerHTML = '<p style="color:red;padding:20px;">메시지를 찾지 못했습니다. (확장 뷰어 형식의 HTML인지 확인하세요)</p>';
+                        return;
+                    }
+                    window.allMessages = msgs;
+                    window.selectedChannels = new Set(); // 단일 채널 → 전체 표시
+                    renderChannelFilter();
+                    createChannelColorSettings();
+                    renderMessages(); // renderMessages가 시스템/서술자/패딩/배경/편집까지 전부 처리
+                } catch (err) {
+                    console.error(err);
+                    previewArea.innerHTML = `<p style="color:red;padding:20px;">파싱 오류: ${err.message}</p>`;
+                }
+            };
+            reader.onerror = () => { previewArea.innerHTML = '<p style="color:red;padding:20px;">파일 읽기 실패</p>'; };
+            reader.readAsText(file, 'UTF-8');
+        }
+
+        // 독립 실행형 입력: 이전 로그 HTML은 포트레이트 원본으로만 사용하고,
+        // 실제 메시지/탭은 코코포리아 전체 내보내기 HTML에서 읽는다.
+        const pluginHtmlInput = document.getElementById('pluginHtmlInput');
+        const exportHtmlInput = document.getElementById('htmlFileInput');
+        let pluginPortraits = new Map();
+        let pluginJournalColors = new Map();
+        let pluginMainMessages = [];
+        let whisperPortraits = {};
+        let channelColors = {};
+
+        const readLocalHTML = file => new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = e => resolve(e.target.result);
+            reader.onerror = () => reject(new Error('파일 읽기 실패'));
+            reader.readAsText(file, 'UTF-8');
+        });
+
+        function getPluginPortraits(html) {
+            const map = new Map();
+            pluginMainMessages = parseViewerHTML(html);
+            pluginMainMessages.forEach(m => {
+                if (!m.name || m.name.toLowerCase() === 'system') return;
+                if (m.color && !pluginJournalColors.has(m.name)) pluginJournalColors.set(m.name, m.color);
+                if (!m.icon) return;
+                if (!map.has(m.name)) map.set(m.name, []);
+                if (!map.get(m.name).includes(m.icon)) map.get(m.name).push(m.icon);
+            });
+            return map;
+        }
+
+        function getChannelColor(channel) {
+            return channelColors[channel] || '#1f1e22';
+        }
+
+        function mixHex(hex, overlay, ratio) {
+            const values = [hex, overlay].map(value => value.match(/[\da-f]{2}/gi)?.map(part => parseInt(part, 16)) || [0, 0, 0]);
+            return '#' + values[0].map((value, i) => Math.round(value * (1 - ratio) + values[1][i] * ratio).toString(16).padStart(2, '0')).join('');
+        }
+
+        function getMainChannelColor() {
+            const main = [...Object.keys(channelColors)].find(channel => /main|메인/i.test(channel));
+            return main ? getChannelColor(main) : '#1f1e22';
+        }
+
+        function sourceChannel(node) {
+            const explicit = node.getAttribute('data-channel') || node.getAttribute('data-tab') || node.getAttribute('data-room-tab');
+            if (explicit) return explicit;
+            const owner = node.closest('[data-channel-name],[data-tab-name],.channel,.tab,.log-channel');
+            if (owner) return owner.getAttribute('data-channel-name') || owner.getAttribute('data-tab-name') || owner.dataset.channel || owner.dataset.tab || owner.textContent.trim();
+            let heading = node.previousElementSibling;
+            while (heading) {
+                if (/^H[1-6]$/.test(heading.tagName)) return heading.textContent.trim();
+                heading = heading.previousElementSibling;
+            }
+            return '메인';
+        }
+
+        function parseWholeExport(html) {
+            const doc = new DOMParser().parseFromString(html, 'text/html');
+            // 코코포리아 전체 내보내기 형식:
+            // <p style="color:..."><span>[탭]</span><span>이름</span><span>내용<br>...</span></p>
+            const exportedRows = [...doc.querySelectorAll('p')].map(p => {
+                const spans = [...p.children].filter(x => x.tagName === 'SPAN');
+                if (spans.length < 3) return null;
+                const textOf = node => { const copy = node.cloneNode(true); copy.querySelectorAll('br').forEach(br => br.replaceWith('\n')); return copy.textContent.trim(); };
+                const channel = textOf(spans[0]).replace(/^\[|\]$/g, '').trim() || '메인';
+                const name = textOf(spans[1]) || 'system';
+                const text = stripEdited(textOf(spans[2]));
+                if (!text && name.toLowerCase() !== 'system') return null;
+                return { name, text, icon: '', color: p.style.color || '#ccc', channel };
+            }).filter(Boolean);
+            if (exportedRows.length) return exportedRows;
+
+            const nodes = [...doc.querySelectorAll('.m,[data-index],.gap,article,li,tr')]
+                .filter(n => !n.parentElement?.closest('.m,[data-index],.gap,article,li,tr'));
+            const messages = [];
+            nodes.forEach(x => {
+                const compact = x.matches('.m') || x.querySelector('.nm,.tx');
+                const nameNode = x.querySelector('.nm,[class*="name"],[class*="user"],h6');
+                const textNode = x.querySelector('.tx,[class*="message"],[class*="text"]') || x.querySelector('p');
+                let name = nameNode ? nameNode.textContent.trim() : '';
+                let text = textNode ? textNode.textContent.trim() : x.textContent.trim();
+                if (!compact && !name && !text) return;
+                const dt = nameNode?.querySelector('.dt');
+                if (dt) { name = name.replace(dt.textContent, '').trim(); }
+                if (!name) name = 'system';
+                text = stripEdited(text);
+                if (!text && name.toLowerCase() !== 'system') return;
+                const icon = x.querySelector('img')?.getAttribute('src') || '';
+                const channel = sourceChannel(x);
+                messages.push({ name, text, icon, color: nameNode?.style.color || '#ccc', channel });
+            });
+            return messages;
+        }
+
+        function applyImportedPortraits() {
+            const mainUseCount = new Map();
+            window.allMessages.forEach(m => {
+                const setting = tabSettings.get(m.channel);
+                const journalKey = `${m.channel}|${m.name}`;
+                if (pluginJournalColors.has(m.name)) m.color = pluginJournalColors.get(m.name);
+                if (/main|메인/i.test(m.channel)) {
+                    const index = mainUseCount.get(m.name) || 0;
+                    const source = pluginMainMessages.filter(x => x.name === m.name)[index];
+                    mainUseCount.set(m.name, index + 1);
+                    if (source) {
+                        m.icon = source.icon || '';
+                        m.color = source.color || m.color;
+                    } else {
+                        m.icon = '';
+                    }
+                } else if (setting && !setting.portrait) {
+                    m.icon = '';
+                } else {
+                    m.icon = journalImages[journalKey] || journalLinks[journalKey] || setting?.customUrl || whisperPortraits[m.channel] || (pluginPortraits.get(m.name) || []).at(-1) || '';
+                }
+            });
+        }
+
+        async function loadTwoHTML() {
+            const plugin = pluginHtmlInput.files[0], exported = exportHtmlInput.files[0];
+            if (!plugin || !exported) {
+                previewArea.innerHTML = '<p style="color:#fbb034;padding:20px;">두 HTML 파일을 모두 선택하세요.</p>';
+                return;
+            }
+            const progress = document.getElementById('progressOverlay');
+            const progressText = document.getElementById('progressText');
+            progress.classList.add('show'); progressText.textContent = 'HTML 분석 중...';
+            try {
+                pluginJournalColors = new Map();
+                pluginPortraits = getPluginPortraits(await readLocalHTML(plugin));
+                window.allMessages = parseWholeExport(await readLocalHTML(exported));
+                if (!window.allMessages.length) throw new Error('전체 내보내기 HTML에서 메시지를 찾지 못했습니다.');
+                window.selectedChannels = new Set(); whisperPortraits = {};
+                initTabSettings(); renderChannelFilter(); createChannelColorSettings();
+                if (bubbleThemeEnabled) applyBubbleDefaultColors();
+                applyImportedPortraits();
+                progressText.textContent = '로그 화면 생성 중...';
+                await new Promise(requestAnimationFrame);
+                renderMessages();
+                progress.classList.remove('show');
+            } catch (err) {
+                progress.classList.remove('show');
+                previewArea.innerHTML = `<p style="color:red;padding:20px;">파싱 오류: ${err.message}</p>`;
+            }
+        }
+
+        pluginHtmlInput.addEventListener('change', loadTwoHTML);
+        exportHtmlInput.addEventListener('change', loadTwoHTML);
+
+        // 출력 탭 설정 상태와 저널별 이미지 override
+        let tabSettings = new Map();
+        let journalImages = {};
+        let journalLinks = {};
+        let activeOutputTab = '';
+
+        function initTabSettings() {
+            tabSettings = new Map([...new Set(window.allMessages.map(m => m.channel))].map(channel => [channel, {
+                enabled: /main|메인/i.test(channel),
+                badge: false,
+                portrait: !/info|정보|other/i.test(channel),
+                compact: false,
+                customUrl: ''
+            }]));
+        }
+
+        function renderChannelFilter() {
+            // 출력 탭은 팝업에서만 관리한다.
+        }
+
+        function syncStyleChannelVisibility() {
+            document.querySelectorAll('#channelColorSettings label[data-channel]').forEach(label => {
+                label.style.display = tabSettings.get(label.dataset.channel)?.enabled === false ? 'none' : '';
+            });
+        }
+
+        function applyPreviewTabVisibility() {
+            previewArea.querySelectorAll('[data-channel]').forEach(node => {
+                node.style.display = tabSettings.get(node.dataset.channel)?.enabled === false ? 'none' : '';
+            });
+        }
+
+        async function regeneratePreview(message = '로그 화면을 다시 생성 중...') {
+            const overlay = document.getElementById('progressOverlay');
+            document.getElementById('progressText').textContent = message;
+            overlay.classList.add('show');
+            await new Promise(requestAnimationFrame);
+            await new Promise(requestAnimationFrame);
+            try { renderMessages(); } finally { overlay.classList.remove('show'); }
+        }
+
+        function renderTabDetail(channel) {
+            activeOutputTab = channel;
+            const detail = document.getElementById('outputTabDetail');
+            detail.innerHTML = '';
+            const setting = tabSettings.get(channel);
+            const heading = document.createElement('b'); heading.textContent = `[${channel}] 이미지 설정`;
+            detail.appendChild(heading);
+            if (true) {
+                const link = document.createElement('input');
+                link.className = 'link-input'; link.placeholder = '이 탭 전체에 사용할 이미지 링크 (선택)'; link.value = setting.customUrl;
+                link.onchange = () => { setting.customUrl = link.value.trim(); applyImportedPortraits(); renderMessages(); };
+                detail.appendChild(link);
+                const names = [...new Set(window.allMessages.filter(m => m.channel === channel).map(m => m.name).filter(Boolean))];
+                names.forEach(name => {
+                    const candidates = pluginPortraits.get(name) || [];
+                    if (!candidates.length) return;
+                    const row = document.createElement('div'); row.className = 'journal-row';
+                    const label = document.createElement('span'); label.className = 'journal-name'; label.textContent = name; row.appendChild(label);
+                    candidates.forEach(url => {
+                        const button = document.createElement('button'); button.type = 'button'; button.className = 'portrait-option';
+                        if (journalImages[`${channel}|${name}`] === url) button.classList.add('active');
+                        const img = document.createElement('img'); img.src = url; img.alt = name; button.appendChild(img);
+                        button.onclick = () => { journalImages[`${channel}|${name}`] = url; applyImportedPortraits(); renderTabDetail(channel); renderMessages(); };
+                        row.appendChild(button);
+                    });
+                    detail.appendChild(row);
+                });
+            } else {
+                const note = document.createElement('span'); note.style.cssText = 'display:block;color:#6b7280;font-size:12px;margin-top:8px'; note.textContent = '이 탭은 저널명과 내용만 출력하며 이미지·서술자 설정을 사용하지 않습니다.'; detail.appendChild(note);
+            }
+        }
+
+        function renderOutputTabSettings() {
+            const list = document.getElementById('outputTabList'); list.innerHTML = '';
+            for (const [channel, setting] of tabSettings) {
+                const row = document.createElement('div'); row.className = 'modal-tab-row';
+                const open = document.createElement('button'); open.type = 'button'; open.className = 'tab-setting-btn' + (setting.enabled ? '' : ' tab-disabled'); open.textContent = channel; open.onclick = () => openJournalImageModal(channel);
+                const output = document.createElement('label'); output.className = 'output-switch'; output.title = '출력 여부'; const outputCheck = document.createElement('input'); outputCheck.type = 'checkbox'; outputCheck.checked = setting.enabled; const slider = document.createElement('span'); slider.className = 'output-slider'; output.append(outputCheck, slider);
+                const badge = document.createElement('button'); badge.type = 'button'; badge.className = 'tab-toggle' + (setting.badge ? ' active' : ''); badge.textContent = '뱃지'; badge.onclick = () => { setting.badge = !setting.badge; badge.classList.toggle('active', setting.badge); renderMessages(); };
+                const portrait = document.createElement('button'); portrait.type = 'button'; portrait.className = 'tab-toggle' + (setting.portrait ? ' active' : ''); portrait.textContent = '포트레'; portrait.onclick = () => { setting.portrait = !setting.portrait; portrait.classList.toggle('active', setting.portrait); applyImportedPortraits(); renderMessages(); };
+                let compact;
+                if (/other/i.test(channel)) {
+                    compact = document.createElement('button'); compact.type = 'button'; compact.className = 'tab-toggle' + (setting.compact ? ' active' : ''); compact.textContent = '간략화'; compact.onclick = () => { setting.compact = !setting.compact; compact.classList.toggle('active', setting.compact); syncDisabled(); renderMessages(); };
+                }
+                const syncDisabled = () => {
+                    [badge, portrait].forEach(button => { button.classList.toggle('tab-option-disabled', !setting.enabled || setting.compact); button.disabled = !setting.enabled || setting.compact; });
+                    if (compact) { compact.classList.toggle('tab-option-disabled', !setting.enabled); compact.disabled = !setting.enabled; }
+                };
+                outputCheck.onchange = () => { setting.enabled = outputCheck.checked; open.classList.toggle('tab-disabled', !setting.enabled); syncDisabled(); syncStyleChannelVisibility(); setTimeout(() => regeneratePreview('출력 탭을 다시 생성 중...'), 0); };
+                row.append(output, open, badge, portrait, ...(compact ? [compact] : []));
+                syncDisabled();
+                list.appendChild(row);
+            }
+            document.getElementById('outputTabDetail').innerHTML = '<span style="color:#6b7280;font-size:12px;">스위치로 출력 여부를 바꾸고, 탭 제목을 누르면 저널별 이미지 설정이 열립니다.</span>';
+        }
+
+        function openJournalImageModal(channel) {
+            activeOutputTab = channel;
+            const list = document.getElementById('journalImageList');
+            list.innerHTML = '';
+            document.getElementById('journalImageModalNote').textContent = `[${channel}] 탭에서 발화한 저널별 이미지입니다. 정사각형 썸네일을 눌러 선택하세요.`;
+            if (/main|메인/i.test(channel)) {
+                list.innerHTML = '<p class="image-fallback">main 포트레이트는 플러그인 HTML의 변경 이력을 그대로 사용하므로 여기서 변경할 수 없습니다.</p>';
+                document.getElementById('journalImageModal').classList.remove('hidden');
+                return;
+            }
+            {
+                const names = [...new Set(window.allMessages.filter(m => m.channel === channel).map(m => m.name).filter(Boolean))];
+                names.forEach(name => {
+                    const key = `${channel}|${name}`, candidates = pluginPortraits.get(name) || [];
+                    const block = document.createElement('section'); block.className = 'image-journal-block';
+                    const title = document.createElement('div'); title.className = 'image-journal-title'; title.textContent = name; block.appendChild(title);
+                    const grid = document.createElement('div'); grid.className = 'image-choice-grid';
+                    const currentImage = journalImages[key] || journalLinks[key] || tabSettings.get(channel)?.customUrl || candidates.at(-1) || '';
+                    candidates.forEach(url => {
+                        const button = document.createElement('button'); button.type = 'button'; button.className = 'image-choice' + (currentImage === url ? ' active' : '');
+                        const image = document.createElement('img'); image.src = url; image.alt = name + ' 포트레이트'; button.appendChild(image);
+                        button.onclick = () => { journalImages[key] = url; delete journalLinks[key]; applyImportedPortraits(); openJournalImageModal(channel); renderMessages(); };
+                        grid.appendChild(button);
+                    });
+                    if (candidates.length) block.appendChild(grid);
+                    const link = document.createElement('input'); link.className = 'link-input'; link.placeholder = '이미지 링크로 대체 (선택)'; link.value = journalLinks[key] || tabSettings.get(channel)?.customUrl || '';
+                    link.onchange = () => { journalLinks[key] = link.value.trim(); delete journalImages[key]; applyImportedPortraits(); renderMessages(); };
+                    block.appendChild(link);
+                    if (!candidates.length) { const note = document.createElement('div'); note.className = 'image-fallback'; note.textContent = 'main에서 같은 이름의 저널 이미지를 찾지 못했습니다. 링크를 입력하세요.'; block.appendChild(note); }
+                    list.appendChild(block);
+                });
+                if (!list.children.length) list.innerHTML = '<p class="image-fallback">이 탭에서 저널을 찾지 못했습니다.</p>';
+            }
+            document.getElementById('journalImageModal').classList.remove('hidden');
+        }
+
+        document.getElementById('outputTabSettingsBtn').onclick = () => { renderOutputTabSettings(); document.getElementById('outputTabModal').classList.remove('hidden'); };
+        document.getElementById('outputTabModalClose').onclick = () => document.getElementById('outputTabModal').classList.add('hidden');
+        document.getElementById('outputTabModal').addEventListener('click', e => { if (e.target.id === 'outputTabModal') e.target.classList.add('hidden'); });
+        document.getElementById('journalImageModalClose').onclick = () => document.getElementById('journalImageModal').classList.add('hidden');
+        document.getElementById('journalImageModal').addEventListener('click', e => { if (e.target.id === 'journalImageModal') e.target.classList.add('hidden'); });
+    </script>
+</body>
+
+</html>
