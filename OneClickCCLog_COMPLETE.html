@@ -500,6 +500,102 @@
         .journal-row { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid #f0f0f0; font-size: 12px; }
         .journal-name { width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .link-input { flex: 1; min-width: 0; padding: 6px 8px; border: 1px solid #d1d5db; border-radius: 6px; }
+        /* 로그 파일 드롭존 */
+        .dropzone {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            padding: 20px 14px;
+            border: 1.5px dashed #cbd5e1;
+            border-radius: 12px;
+            background-color: #f9fafb;
+            text-align: center;
+            cursor: pointer;
+            transition: border-color .15s, background-color .15s, box-shadow .15s;
+        }
+
+        .dropzone:hover,
+        .dropzone:focus-visible {
+            border-color: #2563eb;
+            background-color: #eff6ff;
+            outline: none;
+        }
+
+        .dropzone.dragover {
+            border-color: #2563eb;
+            background-color: #dbeafe;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, .15);
+        }
+
+        .dropzone svg {
+            width: 26px;
+            height: 26px;
+            color: #9ca3af;
+            transition: color .15s;
+        }
+
+        .dropzone:hover svg,
+        .dropzone.dragover svg { color: #2563eb; }
+
+        .dropzone-title { font-size: 13px; font-weight: 600; color: #374151; }
+        .dropzone-hint { font-size: 11px; color: #9ca3af; line-height: 1.5; }
+
+        .file-chips { display: flex; flex-direction: column; gap: 6px; }
+
+        .file-chips:empty { display: none; }
+
+        .file-chip {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            padding: 6px 7px 6px 8px;
+            border: 1px solid #e5e7eb;
+            border-radius: 9px;
+            background-color: #ffffff;
+            font-size: 11.5px;
+            color: #374151;
+        }
+
+        .file-chip .kind {
+            flex-shrink: 0;
+            padding: 2px 6px;
+            border-radius: 999px;
+            font-size: 10px;
+            font-weight: 700;
+        }
+
+        .file-chip .kind.export { background-color: #dbeafe; color: #1d4ed8; }
+        .file-chip .kind.plugin { background-color: #ede9fe; color: #6d28d9; }
+        .file-chip .kind.unknown { background-color: #fee2e2; color: #b91c1c; }
+
+        .file-chip .fname {
+            flex: 1;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            direction: rtl;
+            text-align: left;
+        }
+
+        .file-chip .count { flex-shrink: 0; color: #9ca3af; font-variant-numeric: tabular-nums; }
+
+        .file-chip .remove {
+            flex-shrink: 0;
+            width: 20px;
+            height: 20px;
+            padding: 0;
+            line-height: 1;
+            font-size: 15px;
+            border: 0;
+            border-radius: 6px;
+            background-color: transparent;
+            color: #9ca3af;
+        }
+
+        .file-chip .remove:hover { background-color: #fee2e2; color: #b91c1c; box-shadow: none; }
+
         body.light .modal-panel { background: #fff; }
     </style>
 </head>
@@ -510,14 +606,17 @@
         <div class="sidebar">
             <h2>껍질 미리-깐 코코포 로그 (완전판!)</h2>
             <hr />
-            <label>
-                이전 로그 플러그인 HTML:
-                <input type="file" id="pluginHtmlInput" accept=".html,.htm" />
-            </label>
-            <label>
-                코코포리아 전체 내보내기 HTML:
-                <input type="file" id="htmlFileInput" accept=".html,.htm" />
-            </label>
+            <div class="dropzone" id="logDropzone" tabindex="0" role="button" aria-label="로그 HTML 파일 선택">
+                <input type="file" id="logFileInput" accept=".html,.htm" multiple hidden />
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <path d="M7 9l5-5 5 5" />
+                    <path d="M12 4v12" />
+                </svg>
+                <span class="dropzone-title">로그 HTML을 끌어다 놓기</span>
+                <span class="dropzone-hint">클릭해서 선택 · 여러 개 한꺼번에 가능<br />코코포리아 내보내기 / 이전 로그 플러그인 자동 판별</span>
+            </div>
+            <div class="file-chips" id="logFileChips"></div>
             <label>
                 저장 파일명(선택):
                 <input type="text" id="roomInput" placeholder="ccfolia-wrap" />
@@ -590,6 +689,14 @@
         const styleButton = document.getElementById('applyStyleBtn');
         const paddingInput = document.getElementById('paddingInput');
         const fontSizeInput = document.getElementById('fontSizeInput');
+
+        // ─── 채널 종류 판별 ────────────────────────────────────────
+        // 코코포리아 기본 탭은 방 언어에 따라 라벨이 달라진다(main/메인, info/정보, other/잡담).
+        // 성격이 같은 탭이 같은 디자인으로 나가도록 판별을 여기 한 곳에 모은다.
+        const isMainTab = channel => /main|메인/i.test(channel || '');
+        const isInfoTab = channel => /info|정보/i.test(channel || '');
+        const isOtherTab = channel => /other|잡담|사담/i.test(channel || '');
+        const isBubbleTab = channel => isInfoTab(channel) || isOtherTab(channel);
 
         // 사이드바 탭 전환
         const sidebarTabs = document.querySelectorAll('.sidebar-tab');
@@ -677,9 +784,9 @@
                     const colorInput = document.getElementById(`channelColor_${channel}`);
                     if (colorInput) {
                         // 메인 채널은 #f1f1f1, 이외는 #E3E3E3
-                        const lightColor = (channel.includes('info') || channel.includes('정보') || channel.includes('other'))
+                        const lightColor = (isBubbleTab(channel))
                             ? mixHex('#f1f1f1', '#000000', 0.07)
-                            : ((channel.includes('메인') || channel.includes('main')) ? '#f1f1f1' : '#E3E3E3');
+                            : ((isMainTab(channel)) ? '#f1f1f1' : '#E3E3E3');
                         colorInput.value = lightColor;
                         channelColors[channel] = lightColor;
                     }
@@ -709,7 +816,7 @@
         bubbleThemeToggle.addEventListener('change', () => {
             bubbleThemeEnabled = bubbleThemeToggle.checked;
             if (window.allMessages?.length) {
-                const channels = [...new Set(window.allMessages.map(m => m.channel))].filter(channel => /info|정보|other/i.test(channel));
+                const channels = [...new Set(window.allMessages.map(m => m.channel))].filter(channel => isBubbleTab(channel));
                 if (bubbleThemeEnabled) bubbleCustomColors.clear();
                 channels.forEach(channel => {
                     const colorInput = document.getElementById(`channelColor_${channel}`);
@@ -732,7 +839,7 @@
         function applyBubbleDefaultColors(force = false) {
             const color = mixHex(getMainChannelColor(), lightThemeToggle.checked ? '#000000' : '#ffffff', 0.07);
             [...new Set(window.allMessages.map(m => m.channel))]
-                .filter(channel => /info|정보|other/i.test(channel))
+                .filter(channel => isBubbleTab(channel))
                 .forEach(channel => {
                     if (!force && bubbleCustomColors.has(channel)) return;
                     const colorInput = document.getElementById(`channelColor_${channel}`);
@@ -1443,8 +1550,8 @@
                 gap.dataset.channel = m.channel;
 
                 // info/other는 서술자 설정을 사용하지 않는다. 포트레이트는 옵션으로 허용한다.
-                const plainChannel = /info|정보|other/i.test(m.channel);
-                const isOther = /other/i.test(m.channel);
+                const plainChannel = isBubbleTab(m.channel);
+                const isOther = isOtherTab(m.channel);
                 const cardBackgroundColor = plainChannel && bubbleThemeEnabled ? getMainChannelColor() : channelBackgroundColor;
                 const bubbleColor = plainChannel && bubbleThemeEnabled ? channelBackgroundColor : cardBackgroundColor;
                 if (plainChannel) {
@@ -1452,10 +1559,10 @@
                     gap.style.setProperty('--bubble-color', bubbleColor);
                     if (bubbleThemeEnabled) gap.classList.add('bubble-themed');
                 }
-                if (/info|정보/i.test(m.channel)) gap.classList.add('info-message');
+                if (isInfoTab(m.channel)) gap.classList.add('info-message');
                 else if (isOther) gap.classList.add('other-message');
                 const isCompactOther = isOther && tabSettings.get(m.channel)?.compact;
-                const isNarrator = !!narratorName && m.name === narratorName && /main|메인/i.test(m.channel);
+                const isNarrator = !!narratorName && m.name === narratorName && isMainTab(m.channel);
                 const useBubbleSurface = plainChannel && bubbleThemeEnabled;
                 const bubbleSurface = useBubbleSurface ? document.createElement('div') : gap;
                 if (useBubbleSurface) bubbleSurface.className = 'bubble-surface';
@@ -1589,7 +1696,7 @@
             divs.forEach(div => {
                 const nameSpan = div.querySelector('p span:nth-child(2)');
                 const textSpan = div.querySelector('p span:last-child');
-                if (nameSpan && nameSpan.textContent.trim() === name && /main|메인/i.test(div.dataset.channel || '')) {
+                if (nameSpan && nameSpan.textContent.trim() === name && isMainTab(div.dataset.channel)) {
                     const originalText = textSpan ? textSpan.innerHTML : "";
 
                     div.innerHTML = `
@@ -1625,14 +1732,14 @@
             channelSet.forEach(channel => {
                 // 채널명에 특정 키워드가 포함된 경우 해당 색상 적용
                 let colorKey = '기타'; // 기본값
-                if (channel.includes('메인') || channel.includes('main')) {
+                if (isMainTab(channel)) {
                     colorKey = '메인';
                 } else if (channel.includes('비밀')) {
                     colorKey = '비밀';
                     // 비밀은 귓속말 뱃지 자동 표시, 체크박스 불필요
-                } else if (channel.includes('사담') || channel.includes('other')) {
+                } else if (isOtherTab(channel)) {
                     colorKey = '사담';
-                } else if (channel.includes('info') || channel.includes('정보')) {
+                } else if (isInfoTab(channel)) {
                     colorKey = 'info';
                 }
 
@@ -1641,9 +1748,9 @@
                 label.dataset.channel = channel;
 
                 const baseColor = lightThemeToggle.checked
-                    ? ((channel.includes('메인') || channel.includes('main')) ? '#f1f1f1' : '#E3E3E3')
+                    ? ((isMainTab(channel)) ? '#f1f1f1' : '#E3E3E3')
                     : (defaultColors[colorKey] || '#3d3d3d');
-                const isBubbleChannel = /info|정보|other/i.test(channel);
+                const isBubbleChannel = isBubbleTab(channel);
                 const bubbleBaseColor = lightThemeToggle.checked ? '#f1f1f1' : '#1f1e22';
                 const defaultColor = isBubbleChannel && bubbleThemeEnabled
                     ? mixHex(bubbleBaseColor, lightThemeToggle.checked ? '#000000' : '#ffffff', 0.07)
@@ -1663,9 +1770,9 @@
                 channelSet.forEach(channel => {
                     const colorInput = [...container.querySelectorAll('input[type="color"]')].find(x => x.dataset.channel === channel);
                     if (!colorInput) return;
-                    colorInput.value = /info|정보|other/i.test(channel)
+                    colorInput.value = isBubbleTab(channel)
                         ? mixHex('#f1f1f1', '#000000', 0.07)
-                        : (/main|메인/i.test(channel) ? '#f1f1f1' : '#E3E3E3');
+                        : (isMainTab(channel) ? '#f1f1f1' : '#E3E3E3');
                 });
             }
             channelSet.forEach(channel => {
@@ -1674,8 +1781,8 @@
                     channelColors[channel] = colorInput.value;
                     colorInput.addEventListener('input', () => {
                         channelColors[channel] = colorInput.value;
-                        if (/info|정보|other/i.test(channel)) bubbleCustomColors.add(channel);
-                        else if (/main|메인/i.test(channel) && bubbleThemeEnabled) applyBubbleDefaultColors();
+                        if (isBubbleTab(channel)) bubbleCustomColors.add(channel);
+                        else if (isMainTab(channel) && bubbleThemeEnabled) applyBubbleDefaultColors();
                         renderMessages();
                     });
                 }
@@ -1789,12 +1896,14 @@
                     const img = x.querySelector('img.av') || x.querySelector('img');
                     const icon = img ? (img.getAttribute('src') || '') : '';
                     if (x.classList.contains('sys') || name.toLowerCase() === 'system') {
-                        msgs.push({ name: 'system', text, icon: '', color: '#ccc', channel: '메인' });
+                        if (text === '') return;
+                        msgs.push({ name: 'system', text, icon: '', exportIcon: '', color: '#ccc', channel: '메인', date: '' });
                         return;
                     }
                     if (!name) name = icon ? '이름 없음' : 'system';
-                    if (text === '') return;
-                    msgs.push({ name, text, icon, color: color || '#ccc', channel: '메인' });
+                    if (text === '' && !icon) return; // 본문도 초상화도 없는 빈 행
+                    // 플러그인 뷰어 출력에는 채널 표기가 없고 시각도 표시용 문자열뿐이라 date는 비운다.
+                    msgs.push({ name, text, icon, exportIcon: icon, color: color || '#ccc', channel: '메인', date: '' });
                 });
                 return msgs;
             }
@@ -1814,8 +1923,8 @@
                 const img = x.querySelector('.MuiListItemAvatar-root img') || x.querySelector('img');
                 const icon = img ? (img.getAttribute('src') || '') : '';
                 if (!name) name = icon ? '이름 없음' : 'system';
-                if (text === '' && name.toLowerCase() !== 'system') return;
-                msgs.push({ name, text, icon, color: color || '#ccc', channel: '메인' });
+                if (text === '' && !icon && name.toLowerCase() !== 'system') return;
+                msgs.push({ name, text, icon, exportIcon: icon, color: color || '#ccc', channel: '메인', date: '' });
             });
             return msgs;
         }
@@ -1845,8 +1954,6 @@
 
         // 독립 실행형 입력: 이전 로그 HTML은 포트레이트 원본으로만 사용하고,
         // 실제 메시지/탭은 코코포리아 전체 내보내기 HTML에서 읽는다.
-        const pluginHtmlInput = document.getElementById('pluginHtmlInput');
-        const exportHtmlInput = document.getElementById('htmlFileInput');
         let pluginPortraits = new Map();
         let pluginJournalColors = new Map();
         let pluginMainMessages = [];
@@ -1860,9 +1967,9 @@
             reader.readAsText(file, 'UTF-8');
         });
 
-        function getPluginPortraits(html) {
+        function getPluginPortraits(messages) {
             const map = new Map();
-            pluginMainMessages = parseViewerHTML(html);
+            pluginMainMessages = messages;
             pluginMainMessages.forEach(m => {
                 if (!m.name || m.name.toLowerCase() === 'system') return;
                 if (m.color && !pluginJournalColors.has(m.name)) pluginJournalColors.set(m.name, m.color);
@@ -1883,7 +1990,7 @@
         }
 
         function getMainChannelColor() {
-            const main = [...Object.keys(channelColors)].find(channel => /main|메인/i.test(channel));
+            const main = [...Object.keys(channelColors)].find(channel => isMainTab(channel));
             return main ? getChannelColor(main) : '#1f1e22';
         }
 
@@ -1900,9 +2007,82 @@
             return '메인';
         }
 
+        // 코코포리아 자체 HTML 내보내기(신규) 형식
+        //   <article class="message" data-channel="main|info|other|탭ID">
+        //     <span class="avatar avatar-image-0"> 또는 <span class="avatar-spacer">
+        //     <div class="message-content">
+        //       <div class="message-header">
+        //         <span class="speaker" style="--speaker-color:#888">이름</span>
+        //         <time class="timestamp" datetime="ISO">…</time>
+        //         <span class="edited">…</span>            (편집된 메시지)
+        //         <span class="channel-name">[메인]</span>  ([すべて] 내보내기에만 존재)
+        //       </div>
+        //       <div class="message-text">본문</div>
+        //       <span class="roll-result success">판정 결과</span>
+        //     </div>
+        //   </article>
+        // 초상화는 <style> 안에 .avatar-image-N { background-image: url("data:…") } 로 내장된다.
+        function collectAvatarImages(doc) {
+            const map = new Map();
+            doc.querySelectorAll('style').forEach(style => {
+                const re = /\.avatar-image-(\d+)\s*\{[^}]*?background-image\s*:\s*url\(\s*(['"]?)([^'")]+)\2\s*\)/g;
+                let m;
+                while ((m = re.exec(style.textContent))) map.set(m[1], m[3]);
+            });
+            return map;
+        }
+
+        // message-text는 white-space:pre-wrap이라 개행이 리터럴로 들어있다. br도 함께 살린다.
+        const blockText = node => {
+            if (!node) return '';
+            const copy = node.cloneNode(true);
+            copy.querySelectorAll('br').forEach(br => br.replaceWith('\n'));
+            return copy.textContent.replace(/\r\n?/g, '\n').trim();
+        };
+
+        function parseCcfoliaExport(doc) {
+            const articles = [...doc.querySelectorAll('article.message')];
+            if (!articles.length) return [];
+            const avatars = collectAvatarImages(doc);
+            // 탭별 내보내기에는 .channel-name이 없다 → <h1 class="log-title">방이름 [탭]</h1>에서 회수
+            const titleTab = ((doc.querySelector('.log-title')?.textContent || '').match(/\[([^\]]*)\]\s*$/) || [])[1]?.trim() || '';
+            const messages = [];
+            articles.forEach(article => {
+                const label = blockText(article.querySelector('.channel-name')).replace(/^\[|\]$/g, '').trim();
+                const channel = label || titleTab || article.getAttribute('data-channel') || '메인';
+                const speaker = article.querySelector('.speaker');
+                const body = blockText(article.querySelector('.message-text'));
+                const roll = [...article.querySelectorAll('.roll-result')].map(blockText).filter(Boolean).join('\n');
+                let text = stripEdited([body, roll].filter(Boolean).join('\n'));
+
+                if (article.classList.contains('system') || !speaker) {
+                    if (!text) { // 시스템 메시지는 .message-text 없이 본문만 있을 수 있다
+                        const copy = article.cloneNode(true);
+                        copy.querySelectorAll('.message-header, .timestamp, .channel-name, .edited').forEach(n => n.remove());
+                        text = stripEdited(blockText(copy));
+                    }
+                    if (!text) return;
+                    messages.push({ name: 'system', text, icon: '', exportIcon: '', color: '#ccc', channel });
+                    return;
+                }
+
+                const avatarClass = [...(article.querySelector('.avatar')?.classList || [])].find(c => /^avatar-image-\d+$/.test(c));
+                const icon = avatarClass ? (avatars.get(avatarClass.replace('avatar-image-', '')) || '') : '';
+                if (!text && !icon) return; // 본문도 초상화도 없는 빈 행
+                const name = blockText(speaker) || (icon ? '이름 없음' : 'system');
+                const color = (speaker.style.getPropertyValue('--speaker-color') || '').trim() || '#ccc';
+                const date = article.querySelector('.timestamp')?.getAttribute('datetime') || '';
+                messages.push({ name, text, icon, exportIcon: icon, color, channel, date });
+            });
+            return messages;
+        }
+
         function parseWholeExport(html) {
             const doc = new DOMParser().parseFromString(html, 'text/html');
-            // 코코포리아 전체 내보내기 형식:
+            // 코코포리아 자체 HTML 내보내기(신규)를 우선 시도
+            const native = parseCcfoliaExport(doc);
+            if (native.length) return native;
+            // 구 전체 내보내기 형식:
             // <p style="color:..."><span>[탭]</span><span>이름</span><span>내용<br>...</span></p>
             const exportedRows = [...doc.querySelectorAll('p')].map(p => {
                 const spans = [...p.children].filter(x => x.tagName === 'SPAN');
@@ -1939,12 +2119,15 @@
         }
 
         function applyImportedPortraits() {
+            // 신규 내보내기는 초상화를 내장하므로 플러그인 HTML이 없으면 그걸 그대로 쓴다.
+            const hasPlugin = pluginMainMessages.length > 0;
             const mainUseCount = new Map();
             window.allMessages.forEach(m => {
                 const setting = tabSettings.get(m.channel);
                 const journalKey = `${m.channel}|${m.name}`;
                 if (pluginJournalColors.has(m.name)) m.color = pluginJournalColors.get(m.name);
-                if (/main|메인/i.test(m.channel)) {
+                if (isMainTab(m.channel)) {
+                    if (!hasPlugin) { m.icon = m.exportIcon || ''; return; }
                     const index = mainUseCount.get(m.name) || 0;
                     const source = pluginMainMessages.filter(x => x.name === m.name)[index];
                     mainUseCount.set(m.name, index + 1);
@@ -1957,41 +2140,190 @@
                 } else if (setting && !setting.portrait) {
                     m.icon = '';
                 } else {
-                    m.icon = journalImages[journalKey] || journalLinks[journalKey] || setting?.customUrl || whisperPortraits[m.channel] || (pluginPortraits.get(m.name) || []).at(-1) || '';
+                    m.icon = journalImages[journalKey] || journalLinks[journalKey] || setting?.customUrl || whisperPortraits[m.channel] || (pluginPortraits.get(m.name) || []).at(-1) || m.exportIcon || '';
                 }
             });
         }
 
-        async function loadTwoHTML() {
-            const plugin = pluginHtmlInput.files[0], exported = exportHtmlInput.files[0];
-            if (!plugin || !exported) {
-                previewArea.innerHTML = '<p style="color:#fbb034;padding:20px;">두 HTML 파일을 모두 선택하세요.</p>';
+        // 내보내기 HTML이 초상화를 품고 있으면, 저널 이미지 후보 목록을 그로부터 만든다.
+        function collectPortraitCandidates(messages) {
+            const map = new Map();
+            messages.forEach(m => {
+                const icon = m.exportIcon || m.icon;
+                if (!icon || !m.name || m.name.toLowerCase() === 'system') return;
+                if (!map.has(m.name)) map.set(m.name, []);
+                if (!map.get(m.name).includes(icon)) map.get(m.name).push(icon);
+            });
+            return map;
+        }
+
+        // ─── 로그 파일 자동 판별 + 드롭존 ──────────────────────────
+        const logFileInput = document.getElementById('logFileInput');
+        const logDropzone = document.getElementById('logDropzone');
+        const logFileChips = document.getElementById('logFileChips');
+        let loadedLogFiles = []; // { name, kind, html, messages }
+
+        // 코코포리아 내보내기(신·구)인지, 이전 로그 플러그인 뷰어 출력인지 자동 판별
+        function detectLogKind(doc) {
+            if (doc.querySelector('article.message, main.message-list')) return 'export';           // 신규 네이티브 내보내기
+            if (doc.querySelector('.m .nm, .m .tx, .message-container .m, [data-index] h6')) return 'plugin';
+            const legacyRow = [...doc.querySelectorAll('p')]
+                .some(p => [...p.children].filter(x => x.tagName === 'SPAN').length >= 3);          // 구 전체 내보내기
+            if (legacyRow) return 'export';
+            if (doc.querySelector('[data-index], .m')) return 'plugin';
+            return 'unknown';
+        }
+
+        const KIND_LABEL = { export: '내보내기', plugin: '플러그인', unknown: '알 수 없음' };
+
+        function renderLogFileChips() {
+            logFileChips.innerHTML = '';
+            loadedLogFiles.forEach((entry, i) => {
+                const chip = document.createElement('div');
+                chip.className = 'file-chip';
+
+                const kind = document.createElement('span');
+                kind.className = 'kind ' + entry.kind;
+                kind.textContent = KIND_LABEL[entry.kind];
+
+                const name = document.createElement('span');
+                name.className = 'fname';
+                name.textContent = entry.name;
+                name.title = entry.name;
+
+                const count = document.createElement('span');
+                count.className = 'count';
+                count.textContent = entry.kind === 'unknown' ? '인식 실패' : `${entry.messages.length}개`;
+
+                const remove = document.createElement('button');
+                remove.type = 'button';
+                remove.className = 'remove';
+                remove.textContent = '×';
+                remove.title = '제거';
+                remove.onclick = () => { loadedLogFiles.splice(i, 1); rebuildFromLoadedFiles(); };
+
+                chip.append(kind, name, count, remove);
+                logFileChips.appendChild(chip);
+            });
+        }
+
+        // 탭별로 쪼개 내보낸 파일을 한 번에 넣어도 되도록 병합한다.
+        // 같은 메시지가 [すべて]와 탭별 파일 양쪽에 있어도 중복되지 않는다.
+        function mergeLogMessages(exportEntries, pluginEntries) {
+            const seen = new Set();
+            const merged = [];
+            // 한 파일 안에서 반복된 대사는 그대로 살리고, 파일끼리 겹치는 것만 걸러야 한다.
+            // 그래서 그 파일 안에서 몇 번째로 나온 동일 메시지인지를 키에 함께 넣는다.
+            let localCount = new Map();
+            const add = m => {
+                const base = [m.channel, m.name, m.date || '', m.text].join('\u241F');
+                const nth = (localCount.get(base) || 0) + 1;
+                localCount.set(base, nth);
+                const key = base + '\u241F#' + nth;
+                if (seen.has(key)) return;
+                seen.add(key);
+                merged.push(m);
+            };
+            exportEntries.forEach(entry => { localCount = new Map(); entry.messages.forEach(add); });
+
+            // 같은 방의 내보내기와 플러그인 로그를 함께 넣으면 같은 대사가 두 번 실린다.
+            // 플러그인 쪽에는 채널·시각 표기가 없어 위 키로는 안 걸리므로, 이름+본문이
+            // 내보내기에 있는 횟수만큼만 건너뛴다(같은 대사를 실제로 반복한 경우는 살린다).
+            const quota = new Map();
+            merged.forEach(m => {
+                const key = m.name + '\u241F' + m.text;
+                quota.set(key, (quota.get(key) || 0) + 1);
+            });
+            pluginEntries.forEach(entry => {
+                localCount = new Map();
+                entry.messages.forEach(m => {
+                    const key = m.name + '\u241F' + m.text;
+                    const left = quota.get(key) || 0;
+                    if (left > 0) { quota.set(key, left - 1); return; }
+                    add(m);
+                });
+            });
+
+            // 신규 내보내기만 있을 때는 전 메시지에 타임스탬프가 있으므로 시간순으로 다시 엮는다.
+            // (플러그인 로그가 섞이면 시각이 없어 정렬하지 않고 넣은 순서를 지킨다)
+            if (exportEntries.length > 1 && merged.length && merged.every(m => m.date)) {
+                merged.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+            }
+            return merged;
+        }
+
+        function rebuildFromLoadedFiles() {
+            renderLogFileChips();
+            const exportFiles = loadedLogFiles.filter(f => f.kind === 'export');
+            const pluginFiles = loadedLogFiles.filter(f => f.kind === 'plugin');
+            if (!exportFiles.length && !pluginFiles.length) {
+                window.allMessages = [];
+                previewArea.innerHTML = loadedLogFiles.length
+                    ? '<p style="color:#fbb034;padding:20px;">로그를 읽을 수 있는 HTML이 없습니다.</p>'
+                    : '';
                 return;
             }
+            pluginJournalColors = new Map();
+            pluginMainMessages = [];
+            // 플러그인 로그는 그 자체가 메시지 소스이면서 초상화 변경 이력이기도 하다.
+            pluginPortraits = pluginFiles.length ? getPluginPortraits(pluginFiles[0].messages) : new Map();
+            window.allMessages = mergeLogMessages(exportFiles, pluginFiles);
+            if (!pluginFiles.length) pluginPortraits = collectPortraitCandidates(window.allMessages);
+            window.selectedChannels = new Set(); whisperPortraits = {};
+            initTabSettings(); renderChannelFilter(); createChannelColorSettings();
+            if (bubbleThemeEnabled) applyBubbleDefaultColors();
+            applyImportedPortraits();
+            renderMessages();
+        }
+
+        async function addLogFiles(fileList) {
+            const files = [...(fileList || [])].filter(f => /\.html?$/i.test(f.name));
+            if (!files.length) return;
             const progress = document.getElementById('progressOverlay');
             const progressText = document.getElementById('progressText');
             progress.classList.add('show'); progressText.textContent = 'HTML 분석 중...';
             try {
-                pluginJournalColors = new Map();
-                pluginPortraits = getPluginPortraits(await readLocalHTML(plugin));
-                window.allMessages = parseWholeExport(await readLocalHTML(exported));
-                if (!window.allMessages.length) throw new Error('전체 내보내기 HTML에서 메시지를 찾지 못했습니다.');
-                window.selectedChannels = new Set(); whisperPortraits = {};
-                initTabSettings(); renderChannelFilter(); createChannelColorSettings();
-                if (bubbleThemeEnabled) applyBubbleDefaultColors();
-                applyImportedPortraits();
+                for (const file of files) {
+                    const html = await readLocalHTML(file);
+                    const doc = new DOMParser().parseFromString(html, 'text/html');
+                    let kind = detectLogKind(doc);
+                    const messages = kind === 'export' ? parseWholeExport(html)
+                        : kind === 'plugin' ? parseViewerHTML(html) : [];
+                    if (kind !== 'unknown' && !messages.length) kind = 'unknown';
+                    const entry = { name: file.name, kind, html, messages };
+                    const at = loadedLogFiles.findIndex(x => x.name === entry.name);
+                    if (at >= 0) loadedLogFiles[at] = entry; else loadedLogFiles.push(entry);
+                }
                 progressText.textContent = '로그 화면 생성 중...';
-                await new Promise(requestAnimationFrame);
-                renderMessages();
-                progress.classList.remove('show');
+                await new Promise(r => { requestAnimationFrame(r); setTimeout(r, 80); });
+                rebuildFromLoadedFiles();
             } catch (err) {
-                progress.classList.remove('show');
+                console.error(err);
                 previewArea.innerHTML = `<p style="color:red;padding:20px;">파싱 오류: ${err.message}</p>`;
+            } finally {
+                progress.classList.remove('show');
             }
         }
 
-        pluginHtmlInput.addEventListener('change', loadTwoHTML);
-        exportHtmlInput.addEventListener('change', loadTwoHTML);
+        logDropzone.addEventListener('click', () => logFileInput.click());
+        logDropzone.addEventListener('keydown', e => {
+            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); logFileInput.click(); }
+        });
+        logFileInput.addEventListener('change', () => { addLogFiles(logFileInput.files); logFileInput.value = ''; });
+
+        const hasFiles = e => [...(e.dataTransfer?.types || [])].includes('Files');
+        ['dragenter', 'dragover'].forEach(type => document.addEventListener(type, e => {
+            if (!hasFiles(e)) return;
+            e.preventDefault();
+            logDropzone.classList.add('dragover');
+        }));
+        document.addEventListener('dragleave', e => { if (!e.relatedTarget) logDropzone.classList.remove('dragover'); });
+        document.addEventListener('drop', e => {
+            if (!hasFiles(e)) return;
+            e.preventDefault();
+            logDropzone.classList.remove('dragover');
+            addLogFiles(e.dataTransfer.files);
+        });
 
         // 출력 탭 설정 상태와 저널별 이미지 override
         let tabSettings = new Map();
@@ -2001,9 +2333,9 @@
 
         function initTabSettings() {
             tabSettings = new Map([...new Set(window.allMessages.map(m => m.channel))].map(channel => [channel, {
-                enabled: /main|메인/i.test(channel),
+                enabled: isMainTab(channel),
                 badge: false,
-                portrait: !/info|정보|other/i.test(channel),
+                portrait: !isBubbleTab(channel),
                 compact: false,
                 customUrl: ''
             }]));
@@ -2075,7 +2407,7 @@
                 const badge = document.createElement('button'); badge.type = 'button'; badge.className = 'tab-toggle' + (setting.badge ? ' active' : ''); badge.textContent = '뱃지'; badge.onclick = () => { setting.badge = !setting.badge; badge.classList.toggle('active', setting.badge); renderMessages(); };
                 const portrait = document.createElement('button'); portrait.type = 'button'; portrait.className = 'tab-toggle' + (setting.portrait ? ' active' : ''); portrait.textContent = '포트레'; portrait.onclick = () => { setting.portrait = !setting.portrait; portrait.classList.toggle('active', setting.portrait); applyImportedPortraits(); renderMessages(); };
                 let compact;
-                if (/other/i.test(channel)) {
+                if (isOtherTab(channel)) {
                     compact = document.createElement('button'); compact.type = 'button'; compact.className = 'tab-toggle' + (setting.compact ? ' active' : ''); compact.textContent = '간략화'; compact.onclick = () => { setting.compact = !setting.compact; compact.classList.toggle('active', setting.compact); syncDisabled(); renderMessages(); };
                 }
                 const syncDisabled = () => {
@@ -2095,7 +2427,7 @@
             const list = document.getElementById('journalImageList');
             list.innerHTML = '';
             document.getElementById('journalImageModalNote').textContent = `[${channel}] 탭에서 발화한 저널별 이미지입니다. 정사각형 썸네일을 눌러 선택하세요.`;
-            if (/main|메인/i.test(channel)) {
+            if (isMainTab(channel)) {
                 list.innerHTML = '<p class="image-fallback">main 포트레이트는 플러그인 HTML의 변경 이력을 그대로 사용하므로 여기서 변경할 수 없습니다.</p>';
                 document.getElementById('journalImageModal').classList.remove('hidden');
                 return;
