@@ -2352,8 +2352,11 @@
         }
 
         function applyPreviewTabVisibility() {
+            // .gap.other-compact 등이 display를 !important로 잡고 있어서, 그냥 인라인으로
+            // display:none을 넣으면 밀린다. 숨길 때는 우선순위를 맞춰 준다.
             previewArea.querySelectorAll('[data-channel]').forEach(node => {
-                node.style.display = tabSettings.get(node.dataset.channel)?.enabled === false ? 'none' : '';
+                if (tabSettings.get(node.dataset.channel)?.enabled === false) node.style.setProperty('display', 'none', 'important');
+                else node.style.removeProperty('display');
             });
         }
 
