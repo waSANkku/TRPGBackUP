@@ -2118,8 +2118,15 @@
             return messages;
         }
 
+        // 초상화 우선순위
+        //   1) 그 메시지에 실제로 박혀 있던 초상화 (m.exportIcon)
+        //   2) 사용자가 직접 지정한 것 (저널 이미지/링크, 탭 공통 URL)
+        //   3) 이름으로 찾은 대체 초상화
+        // 신규 내보내기와 플러그인 로그는 메시지마다 초상화를 들고 있으므로 1)에서 끝난다.
+        // 2)·3)은 초상화가 없는 구 내보내기를 메울 때만 쓰인다.
+        // (저널 핀을 걸면 로그 중간의 초상화 교체가 한 장으로 납작해지므로, 내장 초상화가
+        //  있는 탭은 openJournalImageModal에서 핀 자체를 잠근다)
         function applyImportedPortraits() {
-            // 신규 내보내기는 초상화를 내장하므로 플러그인 HTML이 없으면 그걸 그대로 쓴다.
             const hasPlugin = pluginMainMessages.length > 0;
             const mainUseCount = new Map();
             window.allMessages.forEach(m => {
@@ -2127,10 +2134,12 @@
                 const journalKey = `${m.channel}|${m.name}`;
                 if (pluginJournalColors.has(m.name)) m.color = pluginJournalColors.get(m.name);
                 if (isMainTab(m.channel)) {
-                    if (!hasPlugin) { m.icon = m.exportIcon || ''; return; }
+                    // 이름별 등장 순서로 플러그인 로그와 짝을 맞추므로, 건너뛰더라도 카운터는 항상 올린다.
                     const index = mainUseCount.get(m.name) || 0;
-                    const source = pluginMainMessages.filter(x => x.name === m.name)[index];
                     mainUseCount.set(m.name, index + 1);
+                    if (m.exportIcon) { m.icon = m.exportIcon; return; }
+                    if (!hasPlugin) { m.icon = ''; return; }
+                    const source = pluginMainMessages.filter(x => x.name === m.name)[index];
                     if (source) {
                         m.icon = source.icon || '';
                         m.color = source.color || m.color;
@@ -2140,7 +2149,7 @@
                 } else if (setting && !setting.portrait) {
                     m.icon = '';
                 } else {
-                    m.icon = journalImages[journalKey] || journalLinks[journalKey] || setting?.customUrl || whisperPortraits[m.channel] || (pluginPortraits.get(m.name) || []).at(-1) || m.exportIcon || '';
+                    m.icon = m.exportIcon || journalImages[journalKey] || journalLinks[journalKey] || setting?.customUrl || whisperPortraits[m.channel] || (pluginPortraits.get(m.name) || []).at(-1) || '';
                 }
             });
         }
@@ -2270,6 +2279,9 @@
             window.allMessages = mergeLogMessages(exportFiles, pluginFiles);
             if (!pluginFiles.length) pluginPortraits = collectPortraitCandidates(window.allMessages);
             window.selectedChannels = new Set(); whisperPortraits = {};
+            // 저널별로 찍어둔 초상화는 그 로그에만 해당한다. 파일을 새로 넣으면 비워야
+            // 이전 로그의 핀이 새 로그의 메시지별 초상화를 덮어쓰지 않는다.
+            journalImages = {}; journalLinks = {};
             initTabSettings(); renderChannelFilter(); createChannelColorSettings();
             if (bubbleThemeEnabled) applyBubbleDefaultColors();
             applyImportedPortraits();
@@ -2425,16 +2437,22 @@
             document.getElementById('outputTabDetail').innerHTML = '<span style="color:#6b7280;font-size:12px;">스위치로 출력 여부를 바꾸고, 탭 제목을 누르면 저널별 이미지 설정이 열립니다.</span>';
         }
 
+        // 그 탭 메시지에 초상화가 이미 박혀 있으면 저널별 이미지 핀은 필요 없다.
+        // 핀을 걸면 로그 중간의 초상화 교체가 한 장으로 납작해지므로 오히려 손해다.
+        const channelHasOwnPortraits = channel => window.allMessages.some(m => m.channel === channel && m.exportIcon);
+
         function openJournalImageModal(channel) {
             activeOutputTab = channel;
             const list = document.getElementById('journalImageList');
+            const note = document.getElementById('journalImageModalNote');
             list.innerHTML = '';
-            document.getElementById('journalImageModalNote').textContent = `[${channel}] 탭에서 발화한 저널별 이미지입니다. 정사각형 썸네일을 눌러 선택하세요.`;
-            if (isMainTab(channel)) {
-                list.innerHTML = '<p class="image-fallback">main 포트레이트는 플러그인 HTML의 변경 이력을 그대로 사용하므로 여기서 변경할 수 없습니다.</p>';
+            if (isMainTab(channel) || channelHasOwnPortraits(channel)) {
+                note.textContent = `[${channel}] 탭은 로그에 기록된 메시지별 초상화를 그대로 사용합니다.`;
+                list.innerHTML = '<p class="image-fallback">따로 지정할 필요가 없어 잠겨 있습니다. 초상화를 아예 빼려면 출력 탭 설정의 「포트레」를 끄세요.</p>';
                 document.getElementById('journalImageModal').classList.remove('hidden');
                 return;
             }
+            note.textContent = `[${channel}] 탭에서 발화한 저널별 이미지입니다. 정사각형 썸네일을 눌러 선택하세요.`;
             {
                 const names = [...new Set(window.allMessages.filter(m => m.channel === channel).map(m => m.name).filter(Boolean))];
                 names.forEach(name => {
