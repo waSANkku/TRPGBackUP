@@ -975,10 +975,18 @@
         font-weight: bold;
     }
 
+    * {
+    box-sizing: border-box;
+    }
+
+    body {
+    margin: 0;
+    }
+
     .ccfolia_wrap {
     position: relative;
     background-color: #2c2c2cde;
-    color: #fefefe;
+    color: #ddd;
     }
     .msg_container {
     flex-shrink: 0;
@@ -1103,6 +1111,67 @@
 
         .ccfolia_wrap.light .player.system .Utext {
             color: #4b5563 !important;
+        }
+
+        /* 말풍선 테마 / 간략화 규칙. 미리보기에서는 페이지 스타일시트가 이걸 대주는데,
+           내보낸 파일에는 .preview가 없어 그대로는 안 먹는다. 여기에 옮겨 놓지 않으면
+           잡담(other)·정보(info) 탭의 .bubble-surface가 무스타일로 깨진다. */
+        .ccfolia_wrap .gap.other-compact { display: block !important; padding: 4px 16px !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .ccfolia_wrap .gap.other-compact .compact-name { font-weight: 700; margin-right: 6px; }
+        .ccfolia_wrap .gap.other-compact .compact-text { color: #ddd; }
+        .ccfolia_wrap.light .gap.other-compact .compact-text { color: #575757; }
+        .ccfolia_wrap .gap.info-message.bubble-themed,
+        .ccfolia_wrap .gap.other-message.bubble-themed {
+            width: 100%;
+            margin: 0;
+            border: 0;
+            border-radius: 0;
+            box-shadow: none;
+        }
+        .ccfolia_wrap .gap.info-message.bubble-themed {
+            padding: 4px 16px !important;
+        }
+        .ccfolia_wrap .gap.other-message.bubble-themed {
+            margin-top: 0;
+            margin-bottom: 0;
+            border: 0;
+            border-radius: 20px;
+            padding: 2px 16px !important;
+            background-color: var(--main-card-color) !important;
+        }
+        .ccfolia_wrap .gap.info-message.bubble-themed .bubble-surface,
+        .ccfolia_wrap .gap.other-message.bubble-themed .bubble-surface {
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+            width: 100%;
+            box-sizing: border-box;
+            position: relative;
+            padding: 8px 12px;
+            border-radius: 16px;
+            background-color: var(--bubble-color) !important;
+        }
+        .ccfolia_wrap .gap.info-message.bubble-themed .bubble-surface { border-radius: 12px; }
+        .ccfolia_wrap .gap.info-message.bubble-themed .bubble-surface {
+            border: 1px solid rgba(255,255,255,.12);
+            border-left: 4px solid rgba(255,255,255,.45);
+            box-shadow: 0 3px 10px rgba(0,0,0,.12);
+        }
+        .ccfolia_wrap .gap.other-message.bubble-themed.other-compact .bubble-surface {
+            display: block;
+            padding: 7px 12px;
+            border-radius: 16px;
+        }
+        .ccfolia_wrap .gap.other-message.other-compact {
+            padding: 7px 12px !important;
+            border-radius: 0;
+        }
+        .ccfolia_wrap.light .gap.info-message.bubble-themed,
+        .ccfolia_wrap.light .gap.other-message.bubble-themed { border-color: transparent; box-shadow: none; }
+        .ccfolia_wrap.light .gap.info-message.bubble-themed .bubble-surface {
+            border-color: rgba(0,0,0,.1);
+            border-left-color: rgba(0,0,0,.22);
+            box-shadow: 0 3px 10px rgba(0,0,0,.06);
         }
       </style>
     </head>
@@ -1172,10 +1241,18 @@
         font-weight: bold;
     }
 
+    * {
+    box-sizing: border-box;
+    }
+
+    body {
+    margin: 0;
+    }
+
     .ccfolia_wrap {
     position: relative;
     background-color: #2c2c2cde;
-    color: #fefefe;
+    color: #ddd;
     }
     .msg_container {
     flex-shrink: 0;
@@ -1300,6 +1377,67 @@
 
         .ccfolia_wrap.light .player.system .Utext {
             color: #4b5563 !important;
+        }
+
+        /* 말풍선 테마 / 간략화 규칙. 미리보기에서는 페이지 스타일시트가 이걸 대주는데,
+           내보낸 파일에는 .preview가 없어 그대로는 안 먹는다. 여기에 옮겨 놓지 않으면
+           잡담(other)·정보(info) 탭의 .bubble-surface가 무스타일로 깨진다. */
+        .ccfolia_wrap .gap.other-compact { display: block !important; padding: 4px 16px !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .ccfolia_wrap .gap.other-compact .compact-name { font-weight: 700; margin-right: 6px; }
+        .ccfolia_wrap .gap.other-compact .compact-text { color: #ddd; }
+        .ccfolia_wrap.light .gap.other-compact .compact-text { color: #575757; }
+        .ccfolia_wrap .gap.info-message.bubble-themed,
+        .ccfolia_wrap .gap.other-message.bubble-themed {
+            width: 100%;
+            margin: 0;
+            border: 0;
+            border-radius: 0;
+            box-shadow: none;
+        }
+        .ccfolia_wrap .gap.info-message.bubble-themed {
+            padding: 4px 16px !important;
+        }
+        .ccfolia_wrap .gap.other-message.bubble-themed {
+            margin-top: 0;
+            margin-bottom: 0;
+            border: 0;
+            border-radius: 20px;
+            padding: 2px 16px !important;
+            background-color: var(--main-card-color) !important;
+        }
+        .ccfolia_wrap .gap.info-message.bubble-themed .bubble-surface,
+        .ccfolia_wrap .gap.other-message.bubble-themed .bubble-surface {
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+            width: 100%;
+            box-sizing: border-box;
+            position: relative;
+            padding: 8px 12px;
+            border-radius: 16px;
+            background-color: var(--bubble-color) !important;
+        }
+        .ccfolia_wrap .gap.info-message.bubble-themed .bubble-surface { border-radius: 12px; }
+        .ccfolia_wrap .gap.info-message.bubble-themed .bubble-surface {
+            border: 1px solid rgba(255,255,255,.12);
+            border-left: 4px solid rgba(255,255,255,.45);
+            box-shadow: 0 3px 10px rgba(0,0,0,.12);
+        }
+        .ccfolia_wrap .gap.other-message.bubble-themed.other-compact .bubble-surface {
+            display: block;
+            padding: 7px 12px;
+            border-radius: 16px;
+        }
+        .ccfolia_wrap .gap.other-message.other-compact {
+            padding: 7px 12px !important;
+            border-radius: 0;
+        }
+        .ccfolia_wrap.light .gap.info-message.bubble-themed,
+        .ccfolia_wrap.light .gap.other-message.bubble-themed { border-color: transparent; box-shadow: none; }
+        .ccfolia_wrap.light .gap.info-message.bubble-themed .bubble-surface {
+            border-color: rgba(0,0,0,.1);
+            border-left-color: rgba(0,0,0,.22);
+            box-shadow: 0 3px 10px rgba(0,0,0,.06);
         }
       </style>
     </head>
