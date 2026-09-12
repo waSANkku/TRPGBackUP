@@ -1057,6 +1057,40 @@
             background: transparent !important;
         }
 
+        /* 미리보기의 .preview .player.system 규칙과 짝을 맞춘다.
+           이게 없으면 .textWrap의 인라인 float:left가 살아나 시스템 메시지가 왼쪽으로 붙고,
+           .Uname 뱃지도 display:block이라 가로로 늘어난다. */
+        .ccfolia_wrap .player.system {
+            text-align: center;
+            justify-content: center;
+            width: 100%;
+            max-width: none;
+            margin: 0;
+            border-radius: 0;
+            background: transparent !important;
+        }
+
+        .ccfolia_wrap .player.system .textWrap {
+            float: none !important;
+            width: auto;
+            max-width: calc(100% - 32px);
+            box-sizing: border-box;
+            margin: 0 auto !important;
+            text-align: center;
+            overflow-wrap: anywhere;
+        }
+
+        .ccfolia_wrap .player.system .Uname {
+            display: table;
+            width: auto;
+            margin-left: auto !important;
+            margin-right: auto !important;
+        }
+
+        .ccfolia_wrap .player.system .Utext {
+            text-align: center;
+        }
+
         .ccfolia_wrap.light .player.system {
             background: rgb(0 0 0 / 4%) !important;
             border-top-color: rgba(0, 0, 0, 0.1) !important;
@@ -1218,6 +1252,40 @@
 
         .ccfolia_wrap.light .msg_container {
             background: transparent !important;
+        }
+
+        /* 미리보기의 .preview .player.system 규칙과 짝을 맞춘다.
+           이게 없으면 .textWrap의 인라인 float:left가 살아나 시스템 메시지가 왼쪽으로 붙고,
+           .Uname 뱃지도 display:block이라 가로로 늘어난다. */
+        .ccfolia_wrap .player.system {
+            text-align: center;
+            justify-content: center;
+            width: 100%;
+            max-width: none;
+            margin: 0;
+            border-radius: 0;
+            background: transparent !important;
+        }
+
+        .ccfolia_wrap .player.system .textWrap {
+            float: none !important;
+            width: auto;
+            max-width: calc(100% - 32px);
+            box-sizing: border-box;
+            margin: 0 auto !important;
+            text-align: center;
+            overflow-wrap: anywhere;
+        }
+
+        .ccfolia_wrap .player.system .Uname {
+            display: table;
+            width: auto;
+            margin-left: auto !important;
+            margin-right: auto !important;
+        }
+
+        .ccfolia_wrap .player.system .Utext {
+            text-align: center;
         }
 
         .ccfolia_wrap.light .player.system {
