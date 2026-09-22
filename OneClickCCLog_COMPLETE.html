@@ -935,6 +935,24 @@
             if (narratorName) applyNarratorMode(narratorName);
         }
 
+        // 출력에서 빠진 탭은 display:none으로 숨겨만 둔 상태다. 파일에는 아예 빼고,
+        // 그 탭에서만 쓰던 초상화 규칙도 같이 버린다.
+        function exportWrapHtml(wrap) {
+            const clone = wrap.cloneNode(true);
+            clone.querySelectorAll('[data-channel]').forEach(node => {
+                if (node.style.getPropertyValue('display') === 'none') node.remove();
+            });
+            const style = clone.querySelector('style');
+            if (style) {
+                const used = new Set([...clone.querySelectorAll('[class]')].flatMap(el => [...el.classList]));
+                const kept = style.textContent.split('\n')
+                    .filter(rule => [...rule.matchAll(/\.(s\d+|avatar-image-\d+)\b/g)].some(m => used.has(m[1])) || !/\.(s\d+|avatar-image-\d+)\b/.test(rule));
+                if (kept.length) style.textContent = kept.join('\n');
+                else style.remove();
+            }
+            return clone.outerHTML;
+        }
+
         const saveButton = document.getElementById('saveHTMLBtn');
         saveButton.addEventListener('click', () => {
             const wrap = previewArea.querySelector('.ccfolia_wrap');
@@ -1181,7 +1199,7 @@
             if (isLightTheme) {
                 wrap.classList.add('light');
             }
-            const body = `<body>${wrap.outerHTML}</body>`;
+            const body = `<body>${exportWrapHtml(wrap)}</body>`;
             if (isLightTheme) {
                 wrap.classList.remove('light');
             }
@@ -1447,7 +1465,7 @@
             if (isLightTheme) {
                 wrap.classList.add('light');
             }
-            const body = `<body>${wrap.outerHTML}</body>`;
+            const body = `<body>${exportWrapHtml(wrap)}</body>`;
             if (isLightTheme) {
                 wrap.classList.remove('light');
             }
@@ -1702,6 +1720,48 @@
             const target = document.createElement('div');
             target.className = 'ccfolia_wrap';
 
+            // 초상화는 메시지마다 <img src="data:..."> 로 박으면 같은 base64가 수천 번 복제된다.
+            // 이미지당 한 번만 .avatar-image-N 규칙으로 찍고, 칸에는 클래스만 붙인다.
+            // (클래스 이름은 collectAvatarImages가 이미 읽는 형식이라 재불러오기도 그대로 먹는다)
+            const iconIndex = new Map();
+            const iconRules = [];
+            const cssUrl = u => u.replace(/["\\<\n\r]/g, c => '%' + c.charCodeAt(0).toString(16));
+            const iconClass = url => {
+                if (!iconIndex.has(url)) {
+                    iconIndex.set(url, iconIndex.size);
+                    // 라이트 테마의 .ccfolia_wrap.light .msg_container{background:transparent!important}가
+                    // 단축 속성이라, !important + 더 높은 명시도(0,3,0)가 아니면 초상화가 통째로 지워진다.
+                    iconRules.push(`.ccfolia_wrap .msg_container.avatar-image-${iconIndex.get(url)}{background-image:url("${cssUrl(url)}")!important;background-size:cover!important;background-position:top center!important}`);
+                }
+                return `avatar-image-${iconIndex.get(url)}`;
+            };
+
+            // 인라인 style도 메시지 수만큼 복제된다. 같은 선언은 클래스 하나로 묶는다.
+            // 명시도: 라이트 테마가 .ccfolia_wrap.light span{...!important}(0,2,1)로 덮으므로
+            // 최소 (0,3,0)이 되도록 선택자를 세 벌 깔아 준다.
+            const styleIndex = new Map();
+            const styleRules = [];
+            const styleClass = css => {
+                const key = css.replace(/\s+/g, ' ').trim();
+                if (!styleIndex.has(key)) {
+                    const n = styleIndex.size;
+                    styleIndex.set(key, n);
+                    styleRules.push(`.ccfolia_wrap .gap.s${n},.ccfolia_wrap .gap .s${n},.ccfolia_wrap .player.system.s${n},.ccfolia_wrap .player.system .s${n}{${key}}`);
+                }
+                return 's' + styleIndex.get(key);
+            };
+
+            // system 메시지 안쪽 상자는 내용이 고정이라 한 벌만 있으면 된다.
+            // 글자 크기만 설정값을 따른다 (기본 16px일 때의 13/15px 비율 유지).
+            const systemInnerRule = () => [
+                '.ccfolia_wrap .player.system .infoWrap{display:none}',
+                '.ccfolia_wrap .player.system .imgWrap{width:40px;height:40px;overflow:hidden;background-color:rgba(0,0,0,0.31);float:left;border-radius:5px}',
+                '.ccfolia_wrap .player.system .textWrap{float:left;line-height:1.6;margin-left:0;color:#FFFFFF;padding:10px 20px}',
+                `.ccfolia_wrap .player.system .Uname{margin:0 0 6px 0;font-weight:800;color:#858296;font-size:${parseInt(fontSizeValue) - 3}px;letter-spacing:1px;padding:3px 8px;border-radius:15px;background:#000000}`,
+                `.ccfolia_wrap .player.system .Utext{margin:0;font-weight:400;color:#908e9a;font-size:${parseInt(fontSizeValue) - 1}px;letter-spacing:-1px}`
+            ].join('\n');
+            let hasSystem = false;
+
             // 선택된 채널이 없으면 전체 표시
             const filtered = window.selectedChannels.size === 0
                 ? window.allMessages
@@ -1725,28 +1785,12 @@
 
                 // SYSTEM 메시지 처리
                 if (m.name.toLowerCase() === 'system') {
+                    hasSystem = true;
                     const systemDiv = document.createElement('div');
-                    systemDiv.className = 'player system';
+                    systemDiv.className = 'player system ' + styleClass(`display:flex;overflow:hidden;padding:0px;border-top:1px solid rgba(255,255,255,0.08);background:${channelBackgroundColor};text-align:center;justify-content:center`);
                     systemDiv.dataset.channel = m.channel;
-                    systemDiv.style.cssText = `
-                                display: flex;
-                                overflow: hidden;
-                                padding: 0px;
-                                border-top: 1px solid rgba(255, 255, 255, 0.08);
-                                background: ${channelBackgroundColor};
-                                text-align: center;
-                                justify-content: center;
-                            `;
-
-                    systemDiv.innerHTML = `
-                                <div class="infoWrap" style="display: none">
-                                    <div class="imgWrap" style="width: 40px;height: 40px;overflow: hidden;background-color: rgba(0, 0, 0, 0.31);float: left;border-radius: 5px"></div>
-                                </div>
-                                <div class="textWrap" style="float: left;line-height: 1.6;margin-left: 0;color: #FFFFFF;padding: 10px 20px">
-                                    <p class="Uname" style="margin: 0px 0px 6px 0px;font-weight: 800;color: #858296;font-size: 13px;letter-spacing: 1px;padding: 3px 8px;border-radius: 15px;background: #000000">system</p>
-                                    <p class="Utext" style="margin: 0;font-weight: 400;color: #908e9a;font-size: 15px;letter-spacing: -1px">${m.text}</p>
-                                </div>
-                            `;
+                    // 안쪽 상자들은 메시지마다 똑같으므로 systemInnerRule 한 벌로 뺀다.
+                    systemDiv.innerHTML = `<div class="infoWrap"><div class="imgWrap"></div></div><div class="textWrap"><p class="Uname">system</p><p class="Utext">${m.text}</p></div>`;
                     target.appendChild(systemDiv);
                     return;
                 }
@@ -1760,9 +1804,9 @@
                 const isOther = isOtherTab(m.channel);
                 const cardBackgroundColor = plainChannel && bubbleThemeEnabled ? getMainChannelColor() : channelBackgroundColor;
                 const bubbleColor = plainChannel && bubbleThemeEnabled ? channelBackgroundColor : cardBackgroundColor;
+                // 커스텀 속성도 같은 클래스에 얹는다 (cssText 대입이 인라인 변수를 날리는 문제도 같이 사라진다)
                 if (plainChannel) {
-                    gap.style.setProperty('--main-card-color', cardBackgroundColor);
-                    gap.style.setProperty('--bubble-color', bubbleColor);
+                    gap.classList.add(styleClass(`--main-card-color:${cardBackgroundColor};--bubble-color:${bubbleColor}`));
                     if (bubbleThemeEnabled) gap.classList.add('bubble-themed');
                 }
                 if (isInfoTab(m.channel)) gap.classList.add('info-message');
@@ -1775,8 +1819,9 @@
 
                 if (isCompactOther) {
                     gap.classList.add('other-compact');
-                    const name = document.createElement('span'); name.className = 'compact-name'; name.textContent = m.name; name.style.setProperty('color', m.color || '#ccc', 'important');
-                    const text = document.createElement('span'); text.className = 'compact-text'; text.textContent = `: ${m.text}`;
+                    const fontRule = styleClass(`font-size:${fontSizeValue}px`);
+                    const name = document.createElement('span'); name.className = `nm compact-name ${fontRule} ` + styleClass(`color:${m.color || '#ccc'}!important`); name.textContent = m.name;
+                    const text = document.createElement('span'); text.className = 'compact-text ' + fontRule; text.textContent = `: ${m.text}`;
                     bubbleSurface.append(name, text);
                     if (useBubbleSurface) gap.appendChild(bubbleSurface);
                     target.appendChild(gap); return;
@@ -1785,56 +1830,44 @@
                 if (isNarrator) {
                     // 서술자 스타일
                     const fontStyleValue = removeItalic ? 'normal' : 'italic';
-                    gap.style.cssText = `display: flow-root; background-color: ${channelBackgroundColor}; position: relative; padding: 2px 16px; text-align: center;`;
+                    gap.classList.add(styleClass(`display:flow-root;background-color:${channelBackgroundColor};position:relative;padding:2px 16px;text-align:center`));
 
                     const p = document.createElement('p');
-                    p.style.cssText = `color: rgb(221, 221, 221); display: flow-root; width: 100%; font-style: ${fontStyleValue}; font-weight: bold; text-align: center; margin: 7px !important;`;
+                    p.className = styleClass(`color:rgb(221,221,221);display:flow-root;width:100%;font-style:${fontStyleValue};font-weight:bold;text-align:center;margin:7px!important`);
 
                     const spanText = document.createElement('span');
                     spanText.innerHTML = m.text.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])).replace(/\n/g, '<br>');
-                    spanText.style.fontSize = `${fontSizeValue}px`;
+                    spanText.className = 'tx ' + styleClass(`font-size:${fontSizeValue}px`);
                     p.appendChild(spanText);
                     gap.appendChild(p);
                 } else {
                     // 일반 메시지 스타일
-                    gap.style.cssText = `display: flex; background-color: ${cardBackgroundColor}; position: relative; padding: ${paddingValue}px 16px;`;
-                    if (plainChannel) {
-                        gap.style.setProperty('--main-card-color', cardBackgroundColor);
-                        gap.style.setProperty('--bubble-color', bubbleColor);
-                    }
+                    gap.classList.add(styleClass(`display:flex;background-color:${cardBackgroundColor};position:relative;padding:${paddingValue}px 16px`));
 
                     if (!isCompactOther && tabSettings.get(m.channel)?.portrait !== false) {
                         const msgContainer = document.createElement('div');
                         msgContainer.className = 'msg_container';
                         if (m.icon) {
-                            const img = document.createElement('img');
-                            img.src = m.icon;
-                            img.alt = m.name;
-                            img.style.cssText = 'width: 40px; height: 40px; object-fit: cover; object-position: top center; border-radius: 5px;';
-                            msgContainer.appendChild(img);
+                            msgContainer.classList.add(iconClass(m.icon));
+                            msgContainer.setAttribute('aria-hidden', 'true'); // 이름이 바로 옆에 있는 장식 이미지
                         }
                         bubbleSurface.appendChild(msgContainer);
                     }
 
                     const p = document.createElement('p');
-                    p.style.color = 'rgb(221, 221, 221)';
+                    p.className = styleClass('color:rgb(221,221,221)');
 
-                    const spanEmpty = document.createElement('span');
                     const spanName = document.createElement('span');
                     spanName.textContent = m.name;
-                    // 라이트 테마의 .light span { color !important } 보다 우선하도록 인라인 !important
-                    spanName.style.setProperty('color', m.color, 'important');
-                    spanName.style.fontWeight = 'bold';
-                    spanName.style.fontSize = `${fontSizeValue}px`;
+                    // 라이트 테마의 .light span { color !important }를 이기려면 규칙 쪽도 !important + 높은 명시도
+                    spanName.className = 'nm ' + styleClass(`color:${m.color}!important;font-weight:bold;font-size:${fontSizeValue}px`);
 
-                    const spanBr = document.createElement('span');
-                    spanBr.innerHTML = '<br>';
+                    const spanBr = document.createElement('br');
 
                     const spanText = document.createElement('span');
                     spanText.innerHTML = m.text.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])).replace(/\n/g, '<br>');
-                    spanText.style.fontSize = `${fontSizeValue}px`;
+                    spanText.className = 'tx ' + styleClass(`font-size:${fontSizeValue}px`);
 
-                    p.appendChild(spanEmpty);
                     p.appendChild(spanName);
                     p.appendChild(spanBr);
                     p.appendChild(spanText);
@@ -1847,7 +1880,7 @@
                         const secretBadge = document.createElement('span');
                         secretBadge.className = 'secret-badge';
                         secretBadge.textContent = '귓속말';
-                        secretBadge.style.fontSize = `${parseInt(fontSizeValue)-3}px`;
+                        secretBadge.classList.add(styleClass(`font-size:${parseInt(fontSizeValue) - 3}px`));
                         bubbleSurface.appendChild(secretBadge);
                     }
                     // 채널 뱃지는 출력 탭 설정 팝업에서만 관리
@@ -1855,7 +1888,7 @@
                         const channelBadge = document.createElement('span');
                         channelBadge.className = 'secret-badge';
                         channelBadge.textContent = m.channel;
-                        channelBadge.style.fontSize = `${parseInt(fontSizeValue) - 3}px`;
+                        channelBadge.classList.add(styleClass(`font-size:${parseInt(fontSizeValue) - 3}px`));
                         bubbleSurface.appendChild(channelBadge);
                     }
                     if (useBubbleSurface) gap.appendChild(bubbleSurface);
@@ -1863,6 +1896,15 @@
 
                 target.appendChild(gap);
             });
+
+            // wrap 안에 넣어야 outerHTML 내보내기에 규칙이 같이 딸려 나간다.
+            const allRules = [...styleRules, ...iconRules];
+            if (hasSystem) allRules.push(systemInnerRule());
+            if (allRules.length) {
+                const st = document.createElement('style');
+                st.textContent = allRules.join('\n');
+                target.prepend(st);
+            }
 
             previewArea.innerHTML = '';
             previewArea.appendChild(target);
@@ -2302,6 +2344,24 @@
             }).filter(Boolean);
             if (exportedRows.length) return exportedRows;
 
+            // 이 도구의 내보내기는 초상화를 <img>가 아니라 .avatar-image-N 클래스로,
+            // 이름 색도 인라인이 아니라 .sN 클래스로 들고 있다.
+            const avatars = collectAvatarImages(doc);
+            const classColors = new Map();
+            doc.querySelectorAll('style').forEach(style => {
+                const re = /\.(s\d+)[^{}]*\{([^}]*)\}/g;
+                let m;
+                while ((m = re.exec(style.textContent))) {
+                    const color = /(?:^|[;{\s])color:\s*([^;!}]+)/.exec(m[2]);
+                    if (color) classColors.set(m[1], color[1].trim());
+                }
+            });
+            const classColor = node => [...(node?.classList || [])].map(c => classColors.get(c)).find(Boolean) || '';
+            const classIcon = x => {
+                const cls = [...(x.querySelector('.msg_container')?.classList || [])].find(c => /^avatar-image-\d+$/.test(c));
+                return cls ? (avatars.get(cls.slice(13)) || '') : '';
+            };
+
             const nodes = [...doc.querySelectorAll('.m,[data-index],.gap,article,li,tr')]
                 .filter(n => !n.parentElement?.closest('.m,[data-index],.gap,article,li,tr'));
             const messages = [];
@@ -2317,9 +2377,9 @@
                 if (!name) name = 'system';
                 text = stripEdited(text);
                 if (!text && name.toLowerCase() !== 'system') return;
-                const icon = x.querySelector('img')?.getAttribute('src') || '';
+                const icon = x.querySelector('img')?.getAttribute('src') || classIcon(x);
                 const channel = sourceChannel(x);
-                messages.push({ name, text, icon, color: nameNode?.style.color || '#ccc', channel });
+                messages.push({ name, text, icon, exportIcon: icon, color: nameNode?.style.color || classColor(nameNode) || '#ccc', channel });
             });
             return messages;
         }
@@ -2381,6 +2441,7 @@
         // 코코포리아 내보내기(신·구)인지, 이전 로그 플러그인 뷰어 출력인지 자동 판별
         function detectLogKind(doc) {
             if (doc.querySelector('article.message, main.message-list')) return 'export';           // 신규 네이티브 내보내기
+            if (doc.querySelector('.ccfolia_wrap .gap, .ccfolia_wrap .player.system')) return 'export'; // 이 도구가 내보낸 파일
             if (doc.querySelector('.m .nm, .m .tx, .message-container .m, [data-index] h6')) return 'plugin';
             const legacyRow = [...doc.querySelectorAll('p')]
                 .some(p => [...p.children].filter(x => x.tagName === 'SPAN').length >= 3);          // 구 전체 내보내기
