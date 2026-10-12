@@ -298,7 +298,33 @@
             display: none;
         }
 
-        /* 전역 삭제 버튼 */
+        /* 화면 밖 묶음은 높이만 남기고 접어 둔다 (편집 렉 방지, 미리보기 전용) */
+        #previewArea .vchunk.off {
+            overflow: hidden;
+        }
+
+        #previewArea .vchunk.off > * {
+            display: none !important;
+        }
+
+        /* 전역 삭제 / 줄 삽입 버튼 */
+        #globalInsertBtn {
+            position: fixed;
+            background: rgba(60, 130, 255, 0.8);
+            border: none;
+            color: white;
+            font-weight: bold;
+            padding: 2px 6px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: none;
+            z-index: 9999;
+            width: 24px;
+            height: 24px;
+            font-size: 14px;
+            line-height: 1;
+        }
+
         #globalDeleteBtn {
             position: fixed;
             background: rgba(255, 50, 50, 0.8);
@@ -645,6 +671,14 @@
                     폰트 크기 (px):
                     <input type="number" id="fontSizeInput" value="16" min="8" max="32" />
                 </label>
+                <label style="flex-direction: row; align-items: center; gap: 6px;">
+                    삽입 이미지 최대 폭 (px):
+                    <input type="number" id="imageMaxWidth" value="800" min="100" max="2000" step="50" />
+                </label>
+                <p style="margin:0;font-size:12px;color:#6b7280;line-height:1.5;">
+                    본문을 클릭해 편집 상태로 만든 뒤 이미지를 붙여넣기(Ctrl+V)하면 커서 위치에 삽입됩니다.
+                    삽입 시 위 최대 폭으로 줄이고 WebP로 다시 인코딩합니다.
+                </p>
                 <div id="channelColorSettings">
                     <!-- 동적으로 채널별 색상 설정이 추가됩니다 -->
                 </div>
@@ -667,6 +701,7 @@
         <div class="preview" id="previewArea"></div>
     </div>
 
+    <button id="globalInsertBtn" title="이 줄 바로 아래에 이미지 칸 추가">＋</button>
     <button id="globalDeleteBtn">✕</button>
 
     <div id="outputTabModal" class="modal-overlay hidden">
@@ -721,7 +756,11 @@
 
         // 전역 삭제 버튼 로직
         const globalDeleteBtn = document.getElementById('globalDeleteBtn');
+        const globalInsertBtn = document.getElementById('globalInsertBtn');
+        const hoverButtons = [globalDeleteBtn, globalInsertBtn];
         let currentHoverGap = null;
+
+        const showHoverButtons = (show) => hoverButtons.forEach(b => b.style.display = show ? 'block' : 'none');
 
         // 이벤트 위임 방식으로 변경
         document.addEventListener('mouseover', (e) => {
@@ -731,11 +770,13 @@
                 const rect = hovered.getBoundingClientRect();
                 globalDeleteBtn.style.left = (rect.right - 30) + 'px';
                 globalDeleteBtn.style.top = (rect.top + 5) + 'px';
-                globalDeleteBtn.style.display = 'block';
-            } else if (!e.target.closest('#globalDeleteBtn')) {
+                globalInsertBtn.style.left = (rect.right - 60) + 'px';
+                globalInsertBtn.style.top = (rect.top + 5) + 'px';
+                showHoverButtons(true);
+            } else if (!e.target.closest('#globalDeleteBtn, #globalInsertBtn')) {
                 // 버튼 위가 아니고 대상 위도 아니면 숨김
                 if (currentHoverGap && !currentHoverGap.contains(e.target)) {
-                    globalDeleteBtn.style.display = 'none';
+                    showHoverButtons(false);
                     currentHoverGap = null;
                 }
             }
@@ -744,19 +785,28 @@
         globalDeleteBtn.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            if (currentHoverGap) {
-                currentHoverGap.remove();
-                globalDeleteBtn.style.display = 'none';
-                currentHoverGap = null;
-            }
+            if (!currentHoverGap) return;
+            // DOM만 지우면 다시 그릴 때 되살아난다. 원본 목록에서도 뺀다.
+            const index = window.allMessages.indexOf(currentHoverGap.__msg);
+            if (index >= 0) window.allMessages.splice(index, 1);
+            currentHoverGap.remove();
+            showHoverButtons(false);
+            currentHoverGap = null;
+        });
+
+        globalInsertBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (!currentHoverGap) return;
+            insertImageRowAfter(currentHoverGap);
+            showHoverButtons(false);
+            currentHoverGap = null;
         });
 
         // 버튼 위에 마우스가 있을 때 버튼 유지
-        globalDeleteBtn.addEventListener('mouseenter', () => {
-            if (currentHoverGap) {
-                globalDeleteBtn.style.display = 'block';
-            }
-        });
+        hoverButtons.forEach(btn => btn.addEventListener('mouseenter', () => {
+            if (currentHoverGap) showHoverButtons(true);
+        }));
 
         // 라이트 테마 토글
         const lightThemeToggle = document.getElementById('lightThemeToggle');
@@ -939,6 +989,8 @@
         // 그 탭에서만 쓰던 초상화 규칙도 같이 버린다.
         function exportWrapHtml(wrap) {
             const clone = wrap.cloneNode(true);
+            // 가상화용 묶음은 미리보기에서만 쓰는 것이라 통째로 벗긴다.
+            clone.querySelectorAll('.vchunk').forEach(c => c.replaceWith(...c.childNodes));
             clone.querySelectorAll('[data-channel]').forEach(node => {
                 if (node.style.getPropertyValue('display') === 'none') node.remove();
             });
@@ -946,7 +998,7 @@
             if (style) {
                 const used = new Set([...clone.querySelectorAll('[class]')].flatMap(el => [...el.classList]));
                 const kept = style.textContent.split('\n')
-                    .filter(rule => [...rule.matchAll(/\.(s\d+|avatar-image-\d+)\b/g)].some(m => used.has(m[1])) || !/\.(s\d+|avatar-image-\d+)\b/.test(rule));
+                    .filter(rule => [...rule.matchAll(/\.(s\d+|avatar-image-\d+|insimg-\d+)\b/g)].some(m => used.has(m[1])) || !/\.(s\d+|avatar-image-\d+|insimg-\d+)\b/.test(rule));
                 if (kept.length) style.textContent = kept.join('\n');
                 else style.remove();
             }
@@ -1719,13 +1771,26 @@
         function renderMessages() {
             const target = document.createElement('div');
             target.className = 'ccfolia_wrap';
+            blankRowTemplates.clear(); // 패딩·폰트 설정이 바뀌면 껍데기도 새로 떠야 한다
+
+            // 줄을 바로 wrap에 붙이지 않고 200개씩 묶는다 (updateChunkVisibility 참고)
+            let chunk = null, chunkFill = 0;
+            const addRow = row => {
+                if (!chunk || chunkFill === VCHUNK_SIZE) {
+                    chunk = document.createElement('div');
+                    chunk.className = 'vchunk';
+                    target.appendChild(chunk);
+                    chunkFill = 0;
+                }
+                chunk.appendChild(row);
+                chunkFill++;
+            };
 
             // 초상화는 메시지마다 <img src="data:..."> 로 박으면 같은 base64가 수천 번 복제된다.
             // 이미지당 한 번만 .avatar-image-N 규칙으로 찍고, 칸에는 클래스만 붙인다.
             // (클래스 이름은 collectAvatarImages가 이미 읽는 형식이라 재불러오기도 그대로 먹는다)
             const iconIndex = new Map();
             const iconRules = [];
-            const cssUrl = u => u.replace(/["\\<\n\r]/g, c => '%' + c.charCodeAt(0).toString(16));
             const iconClass = url => {
                 if (!iconIndex.has(url)) {
                     iconIndex.set(url, iconIndex.size);
@@ -1734,6 +1799,13 @@
                     iconRules.push(`.ccfolia_wrap .msg_container.avatar-image-${iconIndex.get(url)}{background-image:url("${cssUrl(url)}")!important;background-size:cover!important;background-position:top center!important}`);
                 }
                 return `avatar-image-${iconIndex.get(url)}`;
+            };
+
+            // 본문에 삽입된 이미지도 같은 방식으로 규칙 한 줄씩만 깐다.
+            const usedInserted = new Set();
+            const insertedRule = id => {
+                const info = insertedImages.get(id);
+                return info ? `.ccfolia_wrap .insimg-${id}{width:${info.w}px;aspect-ratio:${info.w}/${info.h};background-image:url("${cssUrl(info.src)}")}` : '';
             };
 
             // 인라인 style도 메시지 수만큼 복제된다. 같은 선언은 클래스 하나로 묶는다.
@@ -1791,7 +1863,8 @@
                     systemDiv.dataset.channel = m.channel;
                     // 안쪽 상자들은 메시지마다 똑같으므로 systemInnerRule 한 벌로 뺀다.
                     systemDiv.innerHTML = `<div class="infoWrap"><div class="imgWrap"></div></div><div class="textWrap"><p class="Uname">system</p><p class="Utext">${m.text}</p></div>`;
-                    target.appendChild(systemDiv);
+                    systemDiv.__msg = m;
+                    addRow(systemDiv);
                     return;
                 }
 
@@ -1824,7 +1897,7 @@
                     const text = document.createElement('span'); text.className = 'compact-text ' + fontRule; text.textContent = `: ${m.text}`;
                     bubbleSurface.append(name, text);
                     if (useBubbleSurface) gap.appendChild(bubbleSurface);
-                    target.appendChild(gap); return;
+                    addRow(gap); return;
                 }
 
                 if (isNarrator) {
@@ -1836,15 +1909,22 @@
                     p.className = styleClass(`color:rgb(221,221,221);display:flow-root;width:100%;font-style:${fontStyleValue};font-weight:bold;text-align:center;margin:7px!important`);
 
                     const spanText = document.createElement('span');
-                    spanText.innerHTML = m.text.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])).replace(/\n/g, '<br>');
+                    if (m.html) spanText.innerHTML = m.html;
+                    else spanText.innerHTML = m.text.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])).replace(/\n/g, '<br>');
                     spanText.className = 'tx ' + styleClass(`font-size:${fontSizeValue}px`);
+                    spanText.querySelectorAll('.insimg').forEach(el => {
+                        const cls = [...el.classList].find(c => /^insimg-\d+$/.test(c));
+                        if (cls) usedInserted.add(Number(cls.slice(7)));
+                    });
+                    attachImagePaste(spanText, m);
                     p.appendChild(spanText);
                     gap.appendChild(p);
                 } else {
                     // 일반 메시지 스타일
                     gap.classList.add(styleClass(`display:flex;background-color:${cardBackgroundColor};position:relative;padding:${paddingValue}px 16px`));
 
-                    if (!isCompactOther && tabSettings.get(m.channel)?.portrait !== false) {
+                    if (m.imageOnly) gap.classList.add('image-row');
+                    if (!isCompactOther && !m.imageOnly && tabSettings.get(m.channel)?.portrait !== false) {
                         const msgContainer = document.createElement('div');
                         msgContainer.className = 'msg_container';
                         if (m.icon) {
@@ -1861,15 +1941,22 @@
                     spanName.textContent = m.name;
                     // 라이트 테마의 .light span { color !important }를 이기려면 규칙 쪽도 !important + 높은 명시도
                     spanName.className = 'nm ' + styleClass(`color:${m.color}!important;font-weight:bold;font-size:${fontSizeValue}px`);
+                    attachNameEdit(spanName, m);
 
                     const spanBr = document.createElement('br');
 
                     const spanText = document.createElement('span');
-                    spanText.innerHTML = m.text.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])).replace(/\n/g, '<br>');
+                    // m.html은 sanitizeBodyHtml을 통과한 것만 들어온다 (삽입 이미지가 있는 메시지뿐)
+                    if (m.html) spanText.innerHTML = m.html;
+                    else spanText.innerHTML = m.text.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])).replace(/\n/g, '<br>');
                     spanText.className = 'tx ' + styleClass(`font-size:${fontSizeValue}px`);
+                    spanText.querySelectorAll('.insimg').forEach(el => {
+                        const cls = [...el.classList].find(c => /^insimg-\d+$/.test(c));
+                        if (cls) usedInserted.add(Number(cls.slice(7)));
+                    });
+                    attachImagePaste(spanText, m);
 
-                    p.appendChild(spanName);
-                    p.appendChild(spanBr);
+                    if (!m.imageOnly) { p.appendChild(spanName); p.appendChild(spanBr); }
                     p.appendChild(spanText);
                     bubbleSurface.appendChild(p);
 
@@ -1894,11 +1981,15 @@
                     if (useBubbleSurface) gap.appendChild(bubbleSurface);
                 }
 
-                target.appendChild(gap);
+                gap.__msg = m;
+                if (!isNarrator && !blankRowTemplates.has(m.channel)) blankRowTemplates.set(m.channel, blankRowTemplate(gap));
+                addRow(gap);
             });
 
             // wrap 안에 넣어야 outerHTML 내보내기에 규칙이 같이 딸려 나간다.
             const allRules = [...styleRules, ...iconRules];
+            if (usedInserted.size) allRules.push(INSERTED_BASE_RULE, ...[...usedInserted].map(insertedRule).filter(Boolean));
+            if (filtered.some(m => m.imageOnly)) allRules.push(IMAGE_ROW_RULE);
             if (hasSystem) allRules.push(systemInnerRule());
             if (allRules.length) {
                 const st = document.createElement('style');
@@ -1911,27 +2002,8 @@
             applyPreviewTabVisibility();
 
             // 편집 기능 추가
-            previewArea.querySelectorAll('.gap span').forEach(span => {
-                span.addEventListener('click', () => {
-                    span.setAttribute('contenteditable', 'true');
-                    span.focus();
-                });
-                span.addEventListener('blur', () => {
-                    span.removeAttribute('contenteditable');
-                });
-                span.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter') {
-                        if (e.shiftKey) {
-                            // Shift+Enter: 줄바꿈 허용
-                            return;
-                        } else {
-                            // Enter만: 편집 완료
-                            e.preventDefault();
-                            span.blur();
-                        }
-                    }
-                });
-            });
+            wireEditing(previewArea);
+            updateChunkVisibility();
         }
 
         // ✱ 서술자 지정 기능
@@ -2357,6 +2429,29 @@
                 }
             });
             const classColor = node => [...(node?.classList || [])].map(c => classColors.get(c)).find(Boolean) || '';
+
+            // 본문에 삽입된 이미지: 규칙에서 원본을 되찾아 이 세션의 id로 다시 등록한다.
+            const insimgSrc = new Map();
+            doc.querySelectorAll('style').forEach(style => {
+                const re = /\.insimg-(\d+)\{([^}]*)\}/g;
+                let m;
+                while ((m = re.exec(style.textContent))) {
+                    const url = /background-image:\s*url\(\s*(['"]?)([^'")]+)\1\s*\)/.exec(m[2]);
+                    const size = /width:\s*(\d+)px[^}]*aspect-ratio:\s*(\d+)\s*\/\s*(\d+)/.exec(m[2]);
+                    if (url) insimgSrc.set(m[1], { src: url[2], w: +(size?.[2] || 400), h: +(size?.[3] || 300) });
+                }
+            });
+            // 남이 준 파일이므로 통째로 innerHTML에 넣지 않는다. 우리 삽입 이미지와 <br>만 남긴다.
+            const bodyHtml = node => {
+                if (!node?.querySelector?.('[class*="insimg-"]')) return '';
+                const box = node.cloneNode(true);
+                box.querySelectorAll('[class*="insimg-"]').forEach(el => {
+                    const old = [...el.classList].find(c => /^insimg-\d+$/.test(c))?.slice(7);
+                    const info = insimgSrc.get(old);
+                    el.replaceWith(info ? makeInsertedNode(registerInsertedImage(info)) : document.createTextNode(''));
+                });
+                return sanitizeBodyHtml(box.innerHTML);
+            };
             const classIcon = x => {
                 const cls = [...(x.querySelector('.msg_container')?.classList || [])].find(c => /^avatar-image-\d+$/.test(c));
                 return cls ? (avatars.get(cls.slice(13)) || '') : '';
@@ -2371,15 +2466,18 @@
                 const textNode = x.querySelector('.tx,[class*="message"],[class*="text"]') || x.querySelector('p');
                 let name = nameNode ? nameNode.textContent.trim() : '';
                 let text = textNode ? textNode.textContent.trim() : x.textContent.trim();
-                if (!compact && !name && !text) return;
+                const html = bodyHtml(textNode);
+                // 이미지만 있는 줄은 글자가 없어도 버리면 안 된다.
+                const imageOnly = x.classList?.contains('image-row');
+                if (!compact && !name && !text && !html) return;
                 const dt = nameNode?.querySelector('.dt');
                 if (dt) { name = name.replace(dt.textContent, '').trim(); }
-                if (!name) name = 'system';
+                if (!name && !imageOnly) name = 'system';
                 text = stripEdited(text);
-                if (!text && name.toLowerCase() !== 'system') return;
+                if (!text && !html && name.toLowerCase() !== 'system') return;
                 const icon = x.querySelector('img')?.getAttribute('src') || classIcon(x);
                 const channel = sourceChannel(x);
-                messages.push({ name, text, icon, exportIcon: icon, color: nameNode?.style.color || classColor(nameNode) || '#ccc', channel });
+                messages.push({ name, text, icon, exportIcon: icon, color: nameNode?.style.color || classColor(nameNode) || '#ccc', channel, ...(html ? { html } : {}), ...(imageOnly ? { imageOnly: true } : {}) });
             });
             return messages;
         }
@@ -2603,6 +2701,280 @@
             logDropzone.classList.remove('dragover');
             addLogFiles(e.dataTransfer.files);
         });
+
+        // ─── 본문 삽입 이미지 ──────────────────────────────────────────────
+        // 원본은 여기 한 번만 두고, 본문에는 <span class="insimg insimg-N">만 남긴다.
+        // 다시 그려도 id가 살아 있어야 하므로 렌더 함수 바깥(모듈 스코프)에 둔다.
+        // localStorage에는 넣지 않는다 (5MB 한도라 이미지 한두 장에 바로 터진다).
+        const insertedImages = new Map();   // id -> {src, w, h}
+        const insertedImageIds = new Map(); // src -> id
+        function registerInsertedImage(info) {
+            if (insertedImageIds.has(info.src)) return insertedImageIds.get(info.src);
+            const id = insertedImages.size;
+            insertedImages.set(id, info);
+            insertedImageIds.set(info.src, id);
+            return id;
+        }
+
+        function makeInsertedNode(id) {
+            const span = document.createElement('span');
+            span.className = `insimg insimg-${id}`;
+            span.setAttribute('contenteditable', 'false'); // 캐럿이 안쪽으로 들어가지 않게
+            return span;
+        }
+
+        const insertMaxWidth = () => parseInt(document.getElementById('imageMaxWidth')?.value) || 800;
+
+        // 이미지 소스(비트맵)를 설정한 최대 폭으로 줄이고 WebP로 다시 인코딩한다.
+        function shrinkToWebp(source, naturalWidth, naturalHeight) {
+            const scale = Math.min(1, insertMaxWidth() / naturalWidth);
+            const w = Math.max(1, Math.round(naturalWidth * scale));
+            const h = Math.max(1, Math.round(naturalHeight * scale));
+            const canvas = document.createElement('canvas');
+            canvas.width = w; canvas.height = h;
+            canvas.getContext('2d').drawImage(source, 0, 0, w, h);
+            // webp를 못 만드는 브라우저는 png를 돌려준다. 그대로 써도 동작은 같다.
+            return { src: canvas.toDataURL('image/webp', 0.8), w, h };
+        }
+
+        async function shrinkPastedImage(file) {
+            const bitmap = await createImageBitmap(file);
+            try { return shrinkToWebp(bitmap, bitmap.width, bitmap.height); }
+            finally { bitmap.close(); }
+        }
+
+        // 웹에서 복사한 이미지는 파일이 아니라 <img src="http…"> 로만 들어온다.
+        // 받아서 똑같이 줄이되, CORS로 캔버스가 오염되면 링크를 그대로 쓴다(용량 0).
+        async function shrinkRemoteImage(url) {
+            const load = crossOrigin => new Promise(resolve => {
+                const img = new Image();
+                if (crossOrigin) img.crossOrigin = 'anonymous';
+                img.referrerPolicy = 'no-referrer';
+                img.onload = () => resolve(img);
+                img.onerror = () => resolve(null);
+                img.src = url;
+            });
+            const safe = await load(true);
+            if (safe) {
+                try { return shrinkToWebp(safe, safe.naturalWidth, safe.naturalHeight); } catch (e) { /* 캔버스 오염 */ }
+            }
+            const plain = safe || await load(false);
+            if (!plain) return null;
+            const scale = Math.min(1, insertMaxWidth() / plain.naturalWidth);
+            return { src: url, w: Math.round(plain.naturalWidth * scale), h: Math.round(plain.naturalHeight * scale) };
+        }
+
+        // await 전에 동기로 판단해야 하므로 꺼내기와 분리한다.
+        function clipboardHasImage(data) {
+            if ([...(data.files || [])].some(f => f.type.startsWith('image/'))) return true;
+            if ([...(data.items || [])].some(i => i.kind === 'file' && i.type.startsWith('image/'))) return true;
+            if (/<img\b[^>]*\bsrc\s*=/i.test(data.getData('text/html') || '')) return true;
+            return /^(https?:\/\/\S+\.(png|jpe?g|gif|webp|avif|bmp)(\?\S*)?|data:image\/\S+)$/i.test((data.getData('text/plain') || '').trim());
+        }
+
+        // 클립보드에서 이미지를 꺼낸다. 파일 → items → text/html의 <img src> → 이미지 URL 순.
+        async function imageFromClipboard(data) {
+            const file = [...(data?.files || [])].find(f => f.type.startsWith('image/'))
+                || [...(data?.items || [])].find(i => i.kind === 'file' && i.type.startsWith('image/'))?.getAsFile();
+            if (file) return shrinkPastedImage(file);
+            const html = data?.getData('text/html') || '';
+            const plain = (data?.getData('text/plain') || '').trim();
+            const url = /<img\b[^>]*\bsrc\s*=\s*["']([^"']+)["']/i.exec(html)?.[1]
+                || (/^(https?:|data:image\/)\S+$/i.test(plain) ? plain : '');
+            return url ? shrinkRemoteImage(url) : null;
+        }
+
+        // 편집한 본문은 우리가 만든 삽입 이미지와 줄바꿈만 남기고 전부 벗겨 낸다.
+        // 재불러오기는 남이 준 HTML을 그대로 삼키는 경로라, 여기를 거치지 않은 마크업은
+        // 절대 innerHTML로 넣지 않는다.
+        function sanitizeBodyHtml(html) {
+            // 살아 있는 div에 innerHTML로 붓으면 <img src=x onerror=…>가 그 자리에서 실행된다.
+            // DOMParser 문서는 브라우징 컨텍스트가 없어 리소스를 받지도, 핸들러를 돌리지도 않는다.
+            const box = new DOMParser().parseFromString('<body>' + html, 'text/html').body;
+            [...box.querySelectorAll('*')].forEach(el => {
+                if (el.tagName === 'BR') return;
+                const cls = [...el.classList].find(c => /^insimg-\d+$/.test(c));
+                if (cls) el.replaceWith(makeInsertedNode(Number(cls.slice(7))));
+                else if (el.tagName === 'SCRIPT' || el.tagName === 'STYLE') el.remove(); // 내용까지 버린다
+                else el.replaceWith(...el.childNodes); // 태그는 버리고 내용만 살린다
+            });
+            return box.innerHTML;
+        }
+
+        // url() 안에서 문자열을 깨뜨리거나 </style>로 빠져나갈 수 있는 글자를 막는다.
+        const cssUrl = u => u.replace(/["\\<\n\r]/g, c => '%' + c.charCodeAt(0).toString(16));
+
+        // 삽입 이미지는 줄 가운데에 놓는다 (margin auto).
+        // 이미지를 품은 본문은 줄 전체 폭을 쓰게 해야 margin auto가 실제로 가운데로 민다.
+        const INSERTED_BASE_RULE = [
+            '.ccfolia_wrap .insimg{display:block;max-width:100%;background-size:contain;background-repeat:no-repeat;background-position:center top;margin:6px auto}',
+            '.ccfolia_wrap p:has(.insimg),.ccfolia_wrap .tx:has(.insimg){display:block;width:100%}'
+        ].join('\n');
+
+        // 붙여넣기 직후에는 다시 렌더하지 않으므로, 살아 있는 <style>에 규칙을 바로 꽂는다.
+        function ensureInsertedRule(id) {
+            const style = previewArea.querySelector('.ccfolia_wrap style');
+            const info = insertedImages.get(id);
+            if (!style || !info || style.textContent.includes(`.insimg-${id}{`)) return;
+            const base = style.textContent.includes('.ccfolia_wrap .insimg{') ? '' : INSERTED_BASE_RULE + '\n';
+            style.textContent += '\n' + base + `.ccfolia_wrap .insimg-${id}{width:${info.w}px;aspect-ratio:${info.w}/${info.h};background-image:url("${cssUrl(info.src)}")}`;
+        }
+
+        // 이름도 본문과 같이 메시지 객체에 되돌려 쓴다 (안 그러면 새로 끼운 줄의 이름이 날아간다).
+        function attachNameEdit(spanName, m) {
+            spanName.addEventListener('blur', () => { m.name = spanName.innerText.trim(); });
+        }
+
+        // 본문 편집 중 이미지 붙여넣기. 편집 결과는 메시지 객체에 되돌려 써야
+        // 다시 그릴 때(regeneratePreview) 살아남는다.
+        function attachImagePaste(spanText, m) {
+            const save = () => {
+                if (spanText.querySelector('.insimg')) {
+                    m.html = sanitizeBodyHtml(spanText.innerHTML);
+                    m.text = spanText.innerText.replace(/\r\n?/g, '\n');
+                } else {
+                    m.text = spanText.innerText.replace(/\r\n?/g, '\n');
+                    delete m.html;
+                }
+            };
+            spanText.addEventListener('blur', save);
+            spanText.addEventListener('paste', async e => {
+                const data = e.clipboardData;
+                if (!data || !clipboardHasImage(data)) return;
+                // clipboardData는 핸들러가 끝나면 못 읽고, preventDefault도 await 전에 해야 한다.
+                e.preventDefault();
+                const plain = (data.getData('text/plain') || '').trim();
+                const range = document.getSelection()?.rangeCount ? document.getSelection().getRangeAt(0).cloneRange() : null;
+                const info = await imageFromClipboard(data);
+                const node = info ? makeInsertedNode(registerInsertedImage(info))
+                    : document.createTextNode(plain); // 이미지를 못 가져오면 주소라도 남긴다
+                if (range && spanText.contains(range.commonAncestorContainer)) {
+                    range.deleteContents();
+                    range.insertNode(node);
+                } else {
+                    spanText.appendChild(node);
+                }
+                if (info) ensureInsertedRule(Number(node.className.match(/insimg-(\d+)/)[1]));
+                save();
+            });
+        }
+
+        // ─── 미리보기 가상화 ───────────────────────────────────────────────
+        // 15000줄을 전부 레이아웃에 올려 두면 글자 하나 칠 때마다 문서 전체가 다시 흐른다(실측 40ms).
+        // 200줄씩 묶어 두고 화면 밖 묶음은 "접는다": 잰 높이를 인라인으로 고정해 자리는 남기고,
+        // 내용물만 display:none으로 내려 레이아웃에서 뺀다. (content-visibility·contain은 효과 없었다)
+        const VCHUNK_SIZE = 200;
+
+        function updateChunkVisibility() {
+            const wrap = previewArea.querySelector('.ccfolia_wrap');
+            if (!wrap) return;
+            const view = previewArea.clientHeight;
+            const from = previewArea.scrollTop - view;
+            const to = previewArea.scrollTop + view * 2;
+            // 재배치하면서 재는 걸 피하려고 측정과 변경을 나눈다.
+            const boxes = [...wrap.querySelectorAll('.vchunk')].map(c => [c, c.offsetTop, c.offsetHeight]);
+            for (const [chunk, top, height] of boxes) {
+                const visible = top + height >= from && top <= to;
+                const folded = chunk.classList.contains('off');
+                if (!visible && !folded) {
+                    chunk.style.height = height + 'px';
+                    chunk.classList.add('off');
+                } else if (visible && folded) {
+                    chunk.classList.remove('off');
+                    chunk.style.height = '';
+                }
+            }
+        }
+
+        let chunkTick = 0;
+        function scheduleChunkUpdate() {
+            if (chunkTick) return;
+            chunkTick = requestAnimationFrame(() => { chunkTick = 0; updateChunkVisibility(); });
+        }
+
+        // 접힌 높이는 그때의 폭 기준이라, 창 크기가 바뀌면 전부 펴고 다시 잰다.
+        function unfoldChunks(root) {
+            root.querySelectorAll('.vchunk').forEach(c => { c.classList.remove('off'); c.style.height = ''; });
+        }
+
+        previewArea.addEventListener('scroll', scheduleChunkUpdate);
+        window.addEventListener('resize', () => { unfoldChunks(previewArea); scheduleChunkUpdate(); });
+
+        // ─── 빈 줄 삽입 ────────────────────────────────────────────────────
+        // 15000줄을 통째로 다시 그리면 몇 초씩 걸리므로, 렌더할 때 채널별로 껍데기
+        // 한 벌만 떠 두고 삽입할 때는 그걸 복제한다.
+        const blankRowTemplates = new Map();
+
+        function blankRowTemplate(gap) {
+            const node = gap.cloneNode(true);
+            node.querySelectorAll('[class*="avatar-image-"]').forEach(el => {
+                [...el.classList].filter(c => /^avatar-image-\d+$/.test(c)).forEach(c => el.classList.remove(c));
+                el.removeAttribute('aria-hidden');
+            });
+            node.querySelectorAll('.nm, .tx').forEach(el => el.textContent = '');
+            node.querySelectorAll('.secret-badge').forEach(el => el.remove());
+            return node;
+        }
+
+        // 클릭하면 편집, 엔터로 확정. 렌더 직후와 새로 끼운 줄에 똑같이 걸어 준다.
+        function wireEditing(root) {
+            root.querySelectorAll('.gap span:not(.insimg)').forEach(span => {
+                span.addEventListener('click', () => {
+                    span.setAttribute('contenteditable', 'true');
+                    span.focus();
+                });
+                span.addEventListener('blur', () => span.removeAttribute('contenteditable'));
+                span.addEventListener('keydown', e => {
+                    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); span.blur(); }
+                });
+            });
+        }
+
+        // 이미지만 들어가는 줄. 이름칸·초상화칸 없이 그림 한 장만 놓는다.
+        function stripToImageRow(node) {
+            node.classList.add('image-row');
+            node.querySelectorAll('.msg_container, .nm, p > br').forEach(el => el.remove());
+            node.querySelectorAll('.tx').forEach(el => el.textContent = '');
+            return node;
+        }
+
+        // 비어 있는 이미지 칸을 하나 끼운다. 여기에 Ctrl+V로 이미지를 붙여넣으면 된다.
+        function insertImageRowAfter(gap) {
+            const source = gap.__msg;
+            const channel = source?.channel || [...blankRowTemplates.keys()][0];
+            const template = blankRowTemplates.get(channel);
+            if (!template) return null;
+
+            const msg = {
+                name: '', text: '', icon: '', exportIcon: '', color: source?.color || '#ccc',
+                channel, date: '', imageOnly: true
+            };
+            const index = window.allMessages.indexOf(source);
+            if (index >= 0) window.allMessages.splice(index + 1, 0, msg);
+            else window.allMessages.push(msg);
+
+            const node = stripToImageRow(template.cloneNode(true));
+            node.__msg = msg;
+            node.querySelectorAll('.tx').forEach(el => attachImagePaste(el, msg));
+            // 줄이 하나 늘었으니 이 묶음의 고정 높이는 더 이상 맞지 않는다.
+            const chunk = gap.closest('.vchunk');
+            if (chunk) { chunk.classList.remove('off'); chunk.style.height = ''; }
+            gap.after(node);
+            wireEditing(node);
+            ensureImageRowRule();
+            scheduleChunkUpdate();
+            node.querySelector('.tx')?.click(); // 바로 붙여넣을 수 있게 포커스
+            return node;
+        }
+
+        // 비어 있는 칸은 아무것도 안 보이면 누를 수가 없으니 자리 표시를 깔아 준다.
+        // 이미지가 들어가면 :empty가 풀려 저절로 사라지므로 내보낸 파일에도 안 보인다.
+        // 내보내기 쪽 CSS에 span:before{display:none!important}가 있어 display도 !important로 되돌려야 한다.
+        const IMAGE_ROW_RULE = ".ccfolia_wrap .image-row p,.ccfolia_wrap .image-row .tx{display:block;width:100%}\n.ccfolia_wrap .image-row .tx:empty::before{content:'이미지를 붙여넣기 (Ctrl+V)';display:block!important;padding:18px;border:1px dashed currentColor;border-radius:8px;opacity:.5;text-align:center}";
+        function ensureImageRowRule() {
+            const style = previewArea.querySelector('.ccfolia_wrap style');
+            if (style && !style.textContent.includes('.image-row .tx:empty')) style.textContent += '\n' + IMAGE_ROW_RULE;
+        }
 
         // 출력 탭 설정 상태와 저널별 이미지 override
         let tabSettings = new Map();
