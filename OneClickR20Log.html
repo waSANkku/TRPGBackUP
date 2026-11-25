@@ -247,6 +247,25 @@
       gap: 6px;
     }
 
+    .export-mode {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 12px;
+    }
+
+    #exportStatus {
+      margin: 0;
+      font-size: 12px;
+      line-height: 1.5;
+      white-space: pre-line;
+    }
+
+    #exportStatus:empty {
+      display: none;
+    }
+
+    .export-mode select,
     .save-row select {
       flex: 1;
       padding: 6px 10px;
@@ -535,29 +554,31 @@
 
 
 
-      // HTML 복사 버튼
-      document.getElementById('copyHTMLBtn').addEventListener('click', () => {
-        const html = getIframeHTML();
-        navigator.clipboard.writeText(html).then(() => {
-          alert('HTML이 복사되었습니다.');
-        }).catch(err => {
+      document.getElementById('copyHTMLBtn').addEventListener('click', async () => {
+        const { content, optimized } = prepareExport();
+        try {
+          await navigator.clipboard.writeText(content);
+          alert(optimized ? '티스토리 최적화 HTML 코드가 복사되었습니다.' : 'HTML이 복사되었습니다.');
+        } catch (err) {
           alert('복사 실패: ' + err);
-        });
+        }
       });
 
-      // 저장 버튼: select에서 고른 확장자(HTML/TXT)로 저장. 내용은 항상 동일한 HTML 마크업이고
-      // TXT는 그 HTML을 텍스트 그대로 .txt 확장자로 담아내는 것뿐(별도로 텍스트만 추출하지 않음).
       document.getElementById('saveBtn').addEventListener('click', () => {
         const filename = document.getElementById('filenameInput').value.trim() || 'roll20-wrap';
         const format = document.getElementById('saveFormatSelect').value;
-        const html = getIframeHTML();
+        const { content } = prepareExport();
 
-        const blob = new Blob([html], { type: format === 'txt' ? 'text/plain' : 'text/html' });
+        const blob = new Blob([content], { type: format === 'txt' ? 'text/plain;charset=utf-8' : 'text/html;charset=utf-8' });
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
         a.download = filename + '.' + format;
         a.click();
-        URL.revokeObjectURL(a.href);
+        setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+      });
+
+      document.getElementById('exportModeSelect').addEventListener('change', () => {
+        document.getElementById('exportStatus').textContent = '';
       });
 
       // 사이드바 탭 전환
@@ -1397,6 +1418,10 @@
 
     // iframe에서 HTML 문자열 가져오기 함수
     function getIframeHTML() {
+      return clonePreviewForExport().outerHTML;
+    }
+
+    function clonePreviewForExport() {
       const iframe = document.getElementById('preview');
       const doc = iframe.contentDocument || iframe.contentWindow.document;
 
@@ -1410,8 +1435,78 @@
     clone.querySelectorAll('button').forEach(btn => {
       if (btn.textContent === '✕') btn.remove();
     });
-  // 복제한 노드의 HTML 문자열 반환
-    return clone.outerHTML;
+    return clone;
+    }
+
+    function optimizeExportClone(clone, original, originalBytes) {
+      const head = clone.querySelector('head');
+      if (!head || typeof CSSStyleSheet.prototype.replaceSync !== "function") return original;
+
+      // Attribute selectors can change matches when style is removed or class is added.
+      const hasAttributeSelectors = [...clone.querySelectorAll('style')].some(style =>
+        /\[\s*(?:[\w*-]*\|\s*)?(?:class|style)(?=\s|[*^$~|=\]])/i.test(style.textContent)
+      );
+      if (hasAttributeSelectors) return original;
+
+      const groups = new Map();
+      for (const element of clone.querySelectorAll('body [style]')) {
+        if (element.namespaceURI !== 'http://www.w3.org/1999/xhtml') continue;
+        const css = element.getAttribute('style');
+        if (!groups.has(css)) groups.set(css, []);
+        groups.get(css).push(element);
+      }
+
+      const prefix = 'r20-' + crypto.getRandomValues(new Uint32Array(2))
+        .reduce((id, value) => id + value.toString(36).padStart(7, '0'), '') + '-';
+      const sheet = new CSSStyleSheet();
+      const encoder = new TextEncoder();
+      const rules = [];
+      for (const [css, elements] of groups) {
+        if (elements.length < 2 || /[<{}]|revert-layer|\burl\s*\(/i.test(css)) continue;
+        const className = prefix + rules.length.toString(36);
+
+        // Normal rules stay normal so author !important rules and animations keep
+        // their priority. Extra specificity covers ordinary skin selectors.
+        const selector = '.' + className + ':not(#a#a#a#a#a#a#a#a#b)';
+        const rule = selector + '{' + css + '}';
+        const attributeSavings = 9 + encoder.encode(css).length - (9 + className.length);
+        if (attributeSavings * elements.length <= encoder.encode(rule).length + 1) continue;
+
+        const inline = elements[0].style;
+        if (!inline.length || Array.from(inline).some(name => inline.getPropertyPriority(name))) continue;
+        sheet.replaceSync(rule);
+        if (sheet.cssRules.length !== 1 || sheet.cssRules[0].style?.cssText !== inline.cssText) continue;
+
+        for (const element of elements) {
+          element.classList.add(className);
+          element.removeAttribute('style');
+        }
+        rules.push(rule);
+      }
+
+      if (!rules.length) return original;
+      const style = clone.ownerDocument.createElement('style');
+      style.textContent = rules.join('\n');
+      head.appendChild(style);
+      const result = clone.outerHTML;
+      return new Blob([result]).size < originalBytes ? result : original;
+    }
+
+    function prepareExport() {
+      const optimized = document.getElementById('exportModeSelect').value === 'tistory';
+      const clone = clonePreviewForExport();
+      const original = clone.outerHTML;
+      const originalBytes = new Blob([original]).size;
+      const hasBase64Images = /data:image\/[^;,\s"'<>]+(?:;[^,;\s"'<>]+)*;base64,/i.test(original);
+      const optimizedContent = optimizeExportClone(clone, original, originalBytes);
+      const optimizedBytes = new Blob([optimizedContent]).size;
+      const savedPercent = ((originalBytes - optimizedBytes) / originalBytes * 100).toFixed(1);
+      const comparison = '원본 ' + originalBytes.toLocaleString('ko-KR') + ' B → 최적화 ' +
+        optimizedBytes.toLocaleString('ko-KR') + ' B (' + savedPercent + '% 절감)';
+      const imageWarning = hasBase64Images ? '\n⚠ Base64 이미지가 본문 용량에 포함되어 있습니다.' : '';
+      document.getElementById('exportStatus').textContent = comparison + imageWarning +
+        (optimized ? '\n티스토리 에디터에서 간격이 넓어 보일 수 있습니다. 미리보기와 발행된 게시글에서는 정상 간격으로 표시됩니다.' : '');
+      return { content: optimized ? optimizedContent : original, optimized };
     }
 
     function extractFragment(html) {
@@ -1855,14 +1950,22 @@
 
       <div class="button-group">
         <button id="applyStyleBtn">스타일 적용</button>
-        <button id="copyHTMLBtn">HTML 복사</button>
+        <label class="export-mode">
+          내보내기 모드
+          <select id="exportModeSelect">
+            <option value="original">원본</option>
+            <option value="tistory">티스토리 최적화</option>
+          </select>
+        </label>
+        <button id="copyHTMLBtn">HTML 코드 복사</button>
         <div class="save-row">
-          <select id="saveFormatSelect">
+          <select id="saveFormatSelect" aria-label="저장 형식">
             <option value="html">HTML</option>
             <option value="txt">TXT</option>
           </select>
           <button id="saveBtn">저장</button>
         </div>
+        <p id="exportStatus" role="status"></p>
       </div>
 
     </div>
