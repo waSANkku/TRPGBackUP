@@ -1281,6 +1281,12 @@
             clone.querySelectorAll('[data-channel]').forEach(node => {
                 if (node.style.getPropertyValue('display') === 'none') node.remove();
             });
+            clone.querySelectorAll('[contenteditable]').forEach(node => node.removeAttribute('contenteditable'));
+            clone.querySelectorAll('.gap .tx, .gap .compact-text, .player.system .Utext').forEach(body => {
+                if (/[\r\n]/.test(body.textContent) || body.querySelector('div, p')) {
+                    body.innerHTML = sanitizeBodyHtml(body.innerHTML);
+                }
+            });
             compactExportRows(clone);
             const style = clone.querySelector('style');
             if (style) {
@@ -1305,7 +1311,7 @@
 
             wrap.querySelectorAll('.gap p > span.tx').forEach(body => {
                 const paragraph = body.parentElement;
-                if (paragraph.lastChild !== body) return;
+                if (paragraph.childNodes.length !== 1) return;
                 paragraph.classList.add(...body.classList);
                 body.replaceWith(...body.childNodes);
             });
@@ -1574,7 +1580,7 @@
                 wrap.classList.remove('light');
             }
 
-            const fullHtml = `${doctype}\n${htmlOpen}\n${head}\n${body}\n${htmlClose}`;
+            const fullHtml = `${doctype}${htmlOpen}${head}${body}${htmlClose}`.replace(/\r\n?|\n/g, ' ');
 
             const blob = new Blob([fullHtml], { type: 'text/html' });
             const url = URL.createObjectURL(blob);
@@ -1843,7 +1849,7 @@
                 wrap.classList.remove('light');
             }
 
-            const fullHtml = `${doctype}\n${htmlOpen}\n${head}\n${body}\n${htmlClose}`;
+            const fullHtml = `${doctype}${htmlOpen}${head}${body}${htmlClose}`.replace(/\r\n?|\n/g, ' ');
             const blob = new Blob([fullHtml], { type: 'text/plain' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -2344,6 +2350,11 @@
 
             // wrap 안에 넣어야 outerHTML 내보내기에 규칙이 같이 딸려 나간다.
             const allRules = [...styleRules, ...iconRules,
+                '.ccfolia_wrap .gap p:has(> .nm + br + .tx){align-self:flex-start;margin:0;padding:0;white-space:normal}',
+                '.ccfolia_wrap .gap p > .nm:has(+ br + .tx){display:block;margin:0 0 2px;padding:0;line-height:1.2;white-space:pre-wrap}',
+                '.ccfolia_wrap .gap p > .nm + br:has(+ .tx){display:none}',
+                '.ccfolia_wrap .gap p > .nm + br + .tx,.ccfolia_wrap .gap p.tx{white-space:normal}',
+                '.ccfolia_wrap .gap > .msg_container,.ccfolia_wrap .gap > .bubble-surface > .msg_container{align-self:flex-start;margin:0}',
                 '.ccfolia_wrap [data-row-align="left"]{--row-align:left;--row-pack:flex-start;--row-direction:row}',
                 '.ccfolia_wrap [data-row-align="center"]{--row-align:center;--row-pack:center;--row-direction:row}',
                 '.ccfolia_wrap [data-row-align="right"]{--row-align:right;--row-pack:flex-start;--row-direction:row-reverse}',
@@ -2896,7 +2907,8 @@
             nodes.forEach(x => {
                 const compact = x.matches('.m') || x.querySelector('.nm,.tx');
                 const nameNode = x.querySelector('.nm,.Uname,[class*="name"],[class*="user"],h6');
-                let textNode = x.querySelector('.tx,.Utext,.compact-text,[class*="message"],[class*="text"]') || x.querySelector('p');
+                let textNode = x.querySelector('.tx,.Utext,.compact-text') ||
+                    x.querySelector('[class*="message"],[class*="text"]') || x.querySelector('p');
                 if (textNode?.matches('p.tx') && nameNode?.parentElement === textNode) {
                     textNode = textNode.cloneNode(true);
                     const speaker = textNode.querySelector('.nm');
@@ -3236,14 +3248,40 @@
             // 살아 있는 div에 innerHTML로 붓으면 <img src=x onerror=…>가 그 자리에서 실행된다.
             // DOMParser 문서는 브라우징 컨텍스트가 없어 리소스를 받지도, 핸들러를 돌리지도 않는다.
             const box = new DOMParser().parseFromString('<body>' + html, 'text/html').body;
-            [...box.querySelectorAll('*')].forEach(el => {
-                if (el.tagName === 'BR') return;
-                const cls = [...el.classList].find(c => /^insimg-\d+$/.test(c));
-                if (cls) el.replaceWith(makeInsertedNode(Number(cls.slice(7))));
-                else if (el.tagName === 'SCRIPT' || el.tagName === 'STYLE') el.remove(); // 내용까지 버린다
-                else el.replaceWith(...el.childNodes); // 태그는 버리고 내용만 살린다
-            });
-            return box.innerHTML;
+            const result = document.createElement('div');
+            let afterBlock = false;
+            const append = node => {
+                if (afterBlock && result.lastChild && result.lastChild.nodeName !== 'BR') {
+                    result.append(document.createElement('br'));
+                }
+                afterBlock = false;
+                result.append(node);
+            };
+            const visit = node => {
+                if (node.nodeType === Node.TEXT_NODE) {
+                    node.data.split(/\r\n?|\n/).forEach((part, index) => {
+                        if (index) append(document.createElement('br'));
+                        if (part) append(document.createTextNode(part));
+                    });
+                    return;
+                }
+                if (node.nodeType !== Node.ELEMENT_NODE || node.matches('script, style')) return;
+                if (node.matches('br')) {
+                    append(document.createElement('br'));
+                    return;
+                }
+                const cls = [...node.classList].find(name => /^insimg-\d+$/.test(name));
+                if (cls) {
+                    append(makeInsertedNode(Number(cls.slice(7))));
+                    return;
+                }
+                const block = node.matches('div, p');
+                if (block) afterBlock = true;
+                node.childNodes.forEach(visit);
+                if (block) afterBlock = true;
+            };
+            box.childNodes.forEach(visit);
+            return result.innerHTML;
         }
 
         // url() 안에서 문자열을 깨뜨리거나 </style>로 빠져나갈 수 있는 글자를 막는다.
