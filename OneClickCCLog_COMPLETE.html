@@ -147,7 +147,10 @@
 
         .sidebar input[type="text"],
         .sidebar input[type="number"],
-        .sidebar input[type="color"] {
+        .sidebar input[type="color"],
+        .sidebar select,
+        #rowStyleDialog select,
+        #rowStyleDialog input[type="text"] {
             padding: 6px 10px;
             border-radius: 8px;
             border: 1px solid #d1d5db;
@@ -168,7 +171,10 @@
         }
 
         .sidebar input[type="text"]:focus,
-        .sidebar input[type="number"]:focus {
+        .sidebar input[type="number"]:focus,
+        .sidebar select:focus,
+        #rowStyleDialog select:focus,
+        #rowStyleDialog input[type="text"]:focus {
             outline: none;
             border-color: #2563eb;
             box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.35);
@@ -308,7 +314,30 @@
         }
 
         /* 전역 삭제 / 줄 삽입 버튼 */
-        #globalInsertBtn {
+        #tab-narrator .narrator-option { flex-direction: row; align-items: center; gap: 6px; }
+        .edit-history { display: flex; gap: 6px; }
+        .edit-history button { flex: 1; }
+        .edit-history button:disabled { opacity: .5; cursor: default; }
+        .preview .row-selected { outline: 2px solid #60a5fa !important; outline-offset: -2px; }
+        #rowStyleDialog { border: 0; margin: min(8vh, 48px) auto 0; text-align: left; }
+        #rowStyleDialog:not([open]) { display: none; }
+        #rowStyleDialog::backdrop { background: rgba(0,0,0,.5); }
+        #rowStyleDialog form, .row-style-match { display: grid; gap: 10px; }
+        #rowStyleDialog form { overflow-y: auto; }
+        .row-style-match { border: 1px solid #e5e7eb; border-radius: 8px; padding: 10px; }
+        #rowStylePreview { margin: 0; min-height: 0; max-height: 150px; overflow: auto; padding: 0; flex: 0 1 auto; width: 100%; border: 1px solid #e5e7eb; border-radius: 8px; }
+        #rowStylePreview .ccfolia_wrap { pointer-events: none; overflow-wrap: anywhere; }
+        #rowStylePreview .msg_container img { height: 100%; object-fit: cover; object-position: top center; }
+        #rowStyleDialog label { font-size: 13px; }
+        #rowStyleDialog label { display: flex; flex-direction: row; align-items: center; justify-content: flex-start; gap: 8px; text-align: left; }
+        .sidebar select, #rowStyleDialog select { min-height: 30px; cursor: pointer; }
+        #rowStyleDialog select, #rowMatchText { flex: 1; min-width: 0; }
+        #rowStyleDialog input[type="checkbox"] { width: auto; margin: 0; }
+        #rowNameColor { width: 48px; height: 30px; padding: 2px 4px; border: 1px solid #d1d5db; background: #fff; border-radius: 8px; cursor: pointer; }
+        #rowNameColor:disabled { opacity: .45; cursor: default; }
+        #rowStyleCount, #rowStyleSubject { color: #4b5563; font-size: 12px; overflow-wrap: anywhere; }
+        #rowStyleDialog .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; }
+        #globalRowStyleBtn, #globalInsertBtn {
             position: fixed;
             background: rgba(60, 130, 255, 0.8);
             border: none;
@@ -324,6 +353,8 @@
             font-size: 14px;
             line-height: 1;
         }
+
+        #globalRowStyleBtn { background: #475569; }
 
         #globalDeleteBtn {
             position: fixed;
@@ -657,11 +688,16 @@
             <div id="tab-narrator" class="tab-panel">
                 <label>
                     서술자 이름:
-                    <input type="text" id="narratorInput" placeholder="이름 정확히 입력" />
+                    <input type="text" id="narratorInput" placeholder="예: 서술자, GM, 진행자" />
                 </label>
                 <label style="flex-direction: row; align-items: center; gap: 6px;">
                     <input type="checkbox" id="removeNarratorItalicCheckbox" style="width:auto;" /> 서술자 기울임 제거
                 </label>
+                <label class="narrator-option"><input type="checkbox" id="blankNameSystem"> 공백 저널명을 시스템 메시지로 표시</label>
+                <label class="narrator-option">시스템 표시
+                    <select id="systemLayout"><option value="stacked">두 줄 (뱃지 위)</option><option value="inline">한 줄 (뱃지 옆)</option></select>
+                </label>
+                <label class="narrator-option"><input type="checkbox" id="hideSystemBadge"> 시스템 뱃지 제거</label>
             </div>
 
             <div id="tab-style" class="tab-panel hidden">
@@ -691,6 +727,10 @@
             </div>
 
             <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 6px;">
+                <div class="edit-history">
+                    <button type="button" id="undoEditBtn" title="Ctrl+Z" disabled>되돌리기</button>
+                    <button type="button" id="redoEditBtn" title="Ctrl+Y" disabled>다시 실행</button>
+                </div>
                 <button id="applyStyleBtn">스타일 적용</button>
                 <button id="saveHTMLBtn">HTML 저장</button>
                 <button id="saveTxtBtn">TXT 저장</button>
@@ -698,7 +738,7 @@
 
         </div>
 
-        <div class="preview" id="previewArea"></div>
+        <div class="preview" id="previewArea" tabindex="-1"></div>
     </div>
 
     <button id="globalInsertBtn" title="이 줄 바로 아래에 이미지 칸 추가">＋</button>
@@ -719,6 +759,33 @@
         </div>
     </div>
 
+    <button type="button" id="globalRowStyleBtn" title="이 채팅의 스타일 설정" aria-label="채팅 스타일 설정">⚙</button>
+    <dialog id="rowStyleDialog" class="modal-panel" aria-labelledby="rowStyleTitle">
+        <div class="modal-header">
+            <h3 id="rowStyleTitle">채팅 스타일</h3>
+            <button type="button" class="modal-close" id="rowStyleClose" aria-label="닫기">✕</button>
+        </div>
+        <div id="rowStyleSubject"></div>
+        <div id="rowStylePreview" class="preview" aria-label="채팅 스타일 미리보기">
+            <div class="ccfolia_wrap"></div>
+        </div>
+        <form id="rowStyleForm">
+            <label>정렬 <select id="rowAlignment">
+                <option value="">기본값</option><option value="left">왼쪽</option>
+                <option value="center">가운데</option><option value="right">오른쪽</option>
+            </select></label>
+            <label><input type="checkbox" id="rowHidePortrait"> 포트레 제거</label>
+            <label class="row-style-color">
+                <input type="checkbox" id="rowOverrideNameColor"> 이름 색상 지정
+                <input type="color" id="rowNameColor" aria-label="이름 색상">
+            </label>
+            <div class="row-style-match">
+                <label for="rowMatchText">저널명에 포함 <input type="text" id="rowMatchText" placeholder="예: Scene" aria-describedby="rowStyleCount"></label>
+                <output id="rowStyleCount" aria-live="polite"></output>
+            </div>
+            <div class="dialog-actions"><button type="button" id="rowStyleCancel">취소</button><button type="submit" id="rowStyleApply">적용</button></div>
+        </form>
+    </dialog>
     <script>
         const previewArea = document.getElementById('previewArea');
         const styleButton = document.getElementById('applyStyleBtn');
@@ -757,7 +824,8 @@
         // 전역 삭제 버튼 로직
         const globalDeleteBtn = document.getElementById('globalDeleteBtn');
         const globalInsertBtn = document.getElementById('globalInsertBtn');
-        const hoverButtons = [globalDeleteBtn, globalInsertBtn];
+        const globalRowStyleBtn = document.getElementById('globalRowStyleBtn');
+        const hoverButtons = [globalDeleteBtn, globalInsertBtn, globalRowStyleBtn];
         let currentHoverGap = null;
 
         const showHoverButtons = (show) => hoverButtons.forEach(b => b.style.display = show ? 'block' : 'none');
@@ -772,8 +840,10 @@
                 globalDeleteBtn.style.top = (rect.top + 5) + 'px';
                 globalInsertBtn.style.left = (rect.right - 60) + 'px';
                 globalInsertBtn.style.top = (rect.top + 5) + 'px';
+                globalRowStyleBtn.style.left = (rect.right - 90) + 'px';
+                globalRowStyleBtn.style.top = (rect.top + 5) + 'px';
                 showHoverButtons(true);
-            } else if (!e.target.closest('#globalDeleteBtn, #globalInsertBtn')) {
+            } else if (!e.target.closest('#globalDeleteBtn, #globalInsertBtn, #globalRowStyleBtn')) {
                 // 버튼 위가 아니고 대상 위도 아니면 숨김
                 if (currentHoverGap && !currentHoverGap.contains(e.target)) {
                     showHoverButtons(false);
@@ -786,12 +856,9 @@
             e.preventDefault();
             e.stopPropagation();
             if (!currentHoverGap) return;
-            // DOM만 지우면 다시 그릴 때 되살아난다. 원본 목록에서도 뺀다.
-            const index = window.allMessages.indexOf(currentHoverGap.__msg);
-            if (index >= 0) window.allMessages.splice(index, 1);
-            currentHoverGap.remove();
-            showHoverButtons(false);
-            currentHoverGap = null;
+            const message = currentHoverGap.__msg;
+            if (!message) return;
+            deleteMessages(selectedMessages.has(message) ? new Set(selectedMessages) : new Set([message]));
         });
 
         globalInsertBtn.addEventListener('click', (e) => {
@@ -807,6 +874,222 @@
         hoverButtons.forEach(btn => btn.addEventListener('mouseenter', () => {
             if (currentHoverGap) showHoverButtons(true);
         }));
+
+        const selectedMessages = new Set();
+        let selectionAnchor = null;
+        const previewRows = () => [...previewArea.querySelectorAll('.gap, .player.system')]
+            .filter(row => row.__msg && tabSettings.get(row.dataset.channel)?.enabled !== false);
+
+        const undoEdits = [];
+        const redoEdits = [];
+        const dirtyChatFields = new WeakSet();
+        const undoEditBtn = document.getElementById('undoEditBtn');
+        const redoEditBtn = document.getElementById('redoEditBtn');
+
+        function updateHistoryButtons() {
+            undoEditBtn.disabled = !undoEdits.length;
+            redoEditBtn.disabled = !redoEdits.length;
+        }
+
+        function recordEdit(undo, redo) {
+            undoEdits.push({ undo, redo });
+            redoEdits.length = 0;
+            updateHistoryButtons();
+        }
+
+        function runHistory(redo) {
+            const from = redo ? redoEdits : undoEdits;
+            const to = redo ? undoEdits : redoEdits;
+            const edit = from.pop();
+            if (!edit) return false;
+            to.push(edit);
+            if (redo) edit.redo();
+            else edit.undo();
+            updateHistoryButtons();
+            redrawEditedPreview();
+            if (!document.querySelector('.modal-overlay:not(.hidden), dialog[open]')) previewArea.focus({ preventScroll: true });
+            return true;
+        }
+        undoEditBtn.onclick = () => runHistory(false);
+        redoEditBtn.onclick = () => runHistory(true);
+
+        function recordMessageChanges(messages, values) {
+            const before = messages.map(message => Object.fromEntries(Object.keys(values).map(key => [key, message[key]])));
+            if (before.every(state => Object.keys(values).every(key => state[key] === values[key]))) return;
+            const apply = () => messages.forEach(message => Object.assign(message, values));
+            recordEdit(() => messages.forEach((message, index) => Object.assign(message, before[index])), apply);
+            apply();
+        }
+
+        function changeMessageList(next) {
+            const before = window.allMessages;
+            const restoreList = list => {
+                window.allMessages = list;
+                selectedMessages.clear();
+                selectionAnchor = null;
+            };
+            recordEdit(() => restoreList(before), () => restoreList(next));
+            window.allMessages = next;
+        }
+
+        function deleteMessages(messages) {
+            const next = window.allMessages.filter(message => !messages.has(message));
+            if (next.length === window.allMessages.length) return;
+            changeMessageList(next);
+            messages.forEach(message => selectedMessages.delete(message));
+            if (messages.has(selectionAnchor)) selectionAnchor = null;
+            redrawEditedPreview();
+            previewArea.focus({ preventScroll: true });
+        }
+
+        function redrawEditedPreview() {
+            const scrollTop = previewArea.scrollTop;
+            renderMessages();
+            previewArea.scrollTop = scrollTop;
+            scheduleChunkUpdate();
+        }
+
+        previewArea.addEventListener('mousedown', event => {
+            if ((event.ctrlKey || event.metaKey || event.shiftKey) && event.target.closest('.gap, .player.system')) event.preventDefault();
+        });
+        previewArea.addEventListener('click', event => {
+            if (!(event.ctrlKey || event.metaKey || event.shiftKey)) {
+                selectedMessages.clear();
+                selectionAnchor = null;
+                previewArea.querySelectorAll('.row-selected').forEach(row => row.classList.remove('row-selected'));
+                return;
+            }
+            const row = event.target.closest('.gap, .player.system');
+            if (!row?.__msg) return;
+            event.preventDefault();
+            event.stopPropagation();
+            previewArea.focus({ preventScroll: true });
+            const rows = previewRows();
+            const from = rows.findIndex(item => item.__msg === selectionAnchor);
+            if (event.shiftKey && from >= 0) {
+                const to = rows.indexOf(row);
+                if (to < 0) return;
+                if (!event.ctrlKey && !event.metaKey) selectedMessages.clear();
+                rows.slice(Math.min(from, to), Math.max(from, to) + 1).forEach(item => selectedMessages.add(item.__msg));
+            } else {
+                if (selectedMessages.has(row.__msg)) selectedMessages.delete(row.__msg);
+                else selectedMessages.add(row.__msg);
+                selectionAnchor = row.__msg;
+            }
+            rows.forEach(item => item.classList.toggle('row-selected', selectedMessages.has(item.__msg)));
+        }, true);
+        window.addEventListener('keydown', event => {
+            const target = event.target;
+            if (event.defaultPrevented || event.altKey ||
+                target.closest?.('textarea, select, input:not([type="checkbox"]):not([type="color"])')) return;
+            const editor = target.closest?.('[contenteditable="true"]');
+            const key = event.key.toLowerCase();
+            if (event.ctrlKey || event.metaKey) {
+                const isZ = event.code === 'KeyZ' || key === 'z';
+                const isY = event.code === 'KeyY' || key === 'y';
+                if (!(isZ || isY) || (editor && !previewArea.contains(editor))) return;
+                const redo = isY || event.shiftKey;
+                if (editor && dirtyChatFields.has(editor)) {
+                    if (event.isComposing) return;
+                    editor.blur();
+                }
+                if (runHistory(redo)) event.preventDefault();
+                return;
+            }
+            if (editor || document.querySelector('dialog[open], .modal-overlay:not(.hidden)')) return;
+            const isDeleteShortcut = event.code === 'KeyX' || key === 'x' || key === 'ㅌ';
+            if (!isDeleteShortcut || !selectedMessages.size) return;
+            event.preventDefault();
+            deleteMessages(new Set(selectedMessages));
+        }, true);
+
+        const rowStyleDialog = document.getElementById('rowStyleDialog');
+        const rowStyleForm = document.getElementById('rowStyleForm');
+        const rowAlignment = document.getElementById('rowAlignment');
+        const rowHidePortrait = document.getElementById('rowHidePortrait');
+        const rowMatchText = document.getElementById('rowMatchText');
+        const rowStyleApply = document.getElementById('rowStyleApply');
+        const rowOverrideNameColor = document.getElementById('rowOverrideNameColor');
+        const rowNameColor = document.getElementById('rowNameColor');
+        const validNameColor = value => /^#[0-9a-f]{6}$/i.test(value || '');
+        const rowStylePreview = document.getElementById('rowStylePreview');
+        const rowStyleSample = rowStylePreview.querySelector('.ccfolia_wrap');
+        const matchText = value => (value || '').normalize('NFKC').trim().toLowerCase();
+        let styledMessage = null;
+
+        function rowStyleTargets() {
+            const fragment = matchText(rowMatchText.value);
+            if (!fragment) return [styledMessage];
+            return window.allMessages.filter(message => !message.imageOnly && matchText(message.name).includes(fragment));
+        }
+
+        function updateRowStylePreview() {
+            const row = rowStyleSample.firstElementChild;
+            if (rowAlignment.value) row.dataset.rowAlign = rowAlignment.value;
+            else delete row.dataset.rowAlign;
+            const portrait = row.querySelector('.msg_container');
+            if (portrait) portrait.style.display = rowHidePortrait.checked ? 'none' : '';
+            rowNameColor.disabled = !rowOverrideNameColor.checked;
+            const name = row.querySelector('.nm');
+            if (name) name.style.setProperty('color', rowOverrideNameColor.checked ? rowNameColor.value : styledMessage.color || '#ccc', 'important');
+        }
+
+        function updateRowStyleCount() {
+            const count = rowStyleTargets().length;
+            rowStyleApply.disabled = count === 0;
+            document.getElementById('rowStyleCount').textContent = matchText(rowMatchText.value)
+                ? count + '개 채팅에 적용 · 저널명에서 검색'
+                : '비워 두면 이 채팅에만 적용';
+        }
+        rowMatchText.oninput = updateRowStyleCount;
+        rowAlignment.onchange = rowHidePortrait.onchange = rowOverrideNameColor.onchange = updateRowStylePreview;
+        rowNameColor.oninput = updateRowStylePreview;
+        globalRowStyleBtn.onclick = () => {
+            styledMessage = currentHoverGap?.__msg;
+            if (!styledMessage) return;
+            document.getElementById('rowStyleSubject').textContent = styledMessage.name.trim() || '공백 저널명';
+            rowMatchText.value = '';
+            rowAlignment.value = styledMessage.alignment || '';
+            rowHidePortrait.checked = !!styledMessage.hidePortrait;
+            rowOverrideNameColor.checked = validNameColor(styledMessage.nameColor);
+            const liveName = currentHoverGap.querySelector('.nm');
+            const rgb = liveName ? getComputedStyle(liveName).color.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/) : null;
+            rowNameColor.value = rowOverrideNameColor.checked ? styledMessage.nameColor :
+                rgb ? '#' + rgb.slice(1).map(value => Number(value).toString(16).padStart(2, '0')).join('') : '#cccccc';
+            const sample = currentHoverGap.cloneNode(true);
+            sample.classList.remove('row-selected');
+            sample.querySelectorAll('[contenteditable]').forEach(node => node.removeAttribute('contenteditable'));
+            if (styledMessage.hidePortrait && sample.querySelector('p > .nm') && tabSettings.get(styledMessage.channel)?.portrait !== false) {
+                const portrait = document.createElement('div');
+                portrait.className = 'msg_container';
+                if (styledMessage.icon) {
+                    const img = document.createElement('img');
+                    img.src = styledMessage.icon;
+                    img.alt = '';
+                    portrait.appendChild(img);
+                }
+                (sample.querySelector('.bubble-surface') || sample).prepend(portrait);
+            }
+            rowStylePreview.classList.toggle('light', previewArea.classList.contains('light'));
+            rowStyleSample.classList.toggle('light', rowStylePreview.classList.contains('light'));
+            rowStyleSample.replaceChildren(sample);
+            updateRowStylePreview();
+            updateRowStyleCount();
+            showHoverButtons(false);
+            rowStyleDialog.showModal();
+        };
+        document.getElementById('rowStyleCancel').onclick = document.getElementById('rowStyleClose').onclick = () => rowStyleDialog.close();
+        rowStyleForm.onsubmit = event => {
+            event.preventDefault();
+            if (rowStyleApply.disabled) return;
+            recordMessageChanges(rowStyleTargets(), {
+                alignment: rowAlignment.value,
+                hidePortrait: rowHidePortrait.checked,
+                nameColor: rowOverrideNameColor.checked ? rowNameColor.value : undefined
+            });
+            rowStyleDialog.close();
+            redrawEditedPreview();
+        };
 
         // 라이트 테마 토글
         const lightThemeToggle = document.getElementById('lightThemeToggle');
@@ -857,6 +1140,7 @@
                 previewArea.classList.remove('light');
             }
             
+            commitEditorSettings();
             // 메시지 다시 렌더링
             if (window.allMessages && window.allMessages.length > 0) {
                 renderMessages();
@@ -883,6 +1167,7 @@
                 });
             }
             saveSettings();
+            commitEditorSettings();
             if (window.allMessages?.length) renderMessages();
         });
 
@@ -900,6 +1185,7 @@
 
         // 스타일 적용 버튼
         styleButton.addEventListener('click', () => {
+            commitEditorSettings();
             // Firestore 메시지가 로드되어 있으면 다시 렌더링
             if (window.allMessages && window.allMessages.length > 0) {
                 renderMessages();
@@ -989,11 +1275,13 @@
         // 그 탭에서만 쓰던 초상화 규칙도 같이 버린다.
         function exportWrapHtml(wrap) {
             const clone = wrap.cloneNode(true);
+            clone.querySelectorAll('.row-selected').forEach(row => row.classList.remove('row-selected'));
             // 가상화용 묶음은 미리보기에서만 쓰는 것이라 통째로 벗긴다.
             clone.querySelectorAll('.vchunk').forEach(c => c.replaceWith(...c.childNodes));
             clone.querySelectorAll('[data-channel]').forEach(node => {
                 if (node.style.getPropertyValue('display') === 'none') node.remove();
             });
+            compactExportRows(clone);
             const style = clone.querySelector('style');
             if (style) {
                 const used = new Set([...clone.querySelectorAll('[class]')].flatMap(el => [...el.classList]));
@@ -1003,6 +1291,33 @@
                 else style.remove();
             }
             return clone.outerHTML;
+        }
+
+        function compactExportRows(wrap) {
+            wrap.querySelectorAll('.gap p').forEach(paragraph => {
+                const spans = [...paragraph.children];
+                if (spans.length !== 4 || !spans.every(node => node.tagName === 'SPAN')) return;
+                const placeholders = spans.slice(0, 3);
+                if (!placeholders.every(node => !node.childNodes.length &&
+                    [...node.attributes].every(attribute => attribute.name === 'style' && node.style.length === 1 && node.style.color))) return;
+                placeholders.forEach(node => node.remove());
+            });
+
+            wrap.querySelectorAll('.gap p > span.tx').forEach(body => {
+                const paragraph = body.parentElement;
+                if (paragraph.lastChild !== body) return;
+                paragraph.classList.add(...body.classList);
+                body.replaceWith(...body.childNodes);
+            });
+
+            wrap.querySelectorAll('.gap > .msg_container:empty, .gap > .bubble-surface > .msg_container:empty').forEach(portrait => {
+                if ([...portrait.classList].some(name => name !== 'msg_container') || portrait.attributes.length !== 1) return;
+                portrait.parentElement.classList.add('empty-portrait');
+                portrait.remove();
+            });
+            wrap.querySelectorAll('.player.system > .infoWrap[style]').forEach(info => {
+                if (info.style.display === 'none' && !info.textContent.trim() && !info.querySelector('img')) info.remove();
+            });
         }
 
         const saveButton = document.getElementById('saveHTMLBtn');
@@ -1034,7 +1349,7 @@
         font-weight: 200;
     }
 
-    .ccfolia_wrap span, .ccfolia_wrap b {
+    .ccfolia_wrap span, .ccfolia_wrap p.tx, .ccfolia_wrap b {
         font-size: 16px;
         font-family: 'Arial', sans-serif;
         line-height: 1.5;
@@ -1058,7 +1373,7 @@
     background-color: #2c2c2cde;
     color: #ddd;
     }
-    .msg_container {
+    .msg_container, .ccfolia_wrap .empty-portrait::before {
     flex-shrink: 0;
     width: 40px;
     height: 40px;
@@ -1069,6 +1384,9 @@
     align-items: center;
     justify-content: center;
     }
+
+    .ccfolia_wrap .empty-portrait::before { content: ""; }
+    .ccfolia_wrap.light .empty-portrait::before { background: transparent; }
 
     .msg_container img {
     width: 40px;
@@ -1300,7 +1618,7 @@
         font-weight: 200;
     }
 
-    .ccfolia_wrap span, .ccfolia_wrap b {
+    .ccfolia_wrap span, .ccfolia_wrap p.tx, .ccfolia_wrap b {
         font-size: 16px;
         font-family: 'Arial', sans-serif;
         line-height: 1.5;
@@ -1324,7 +1642,7 @@
     background-color: #2c2c2cde;
     color: #ddd;
     }
-    .msg_container {
+    .msg_container, .ccfolia_wrap .empty-portrait::before {
     flex-shrink: 0;
     width: 40px;
     height: 40px;
@@ -1335,6 +1653,9 @@
     align-items: center;
     justify-content: center;
     }
+
+    .ccfolia_wrap .empty-portrait::before { content: ""; }
+    .ccfolia_wrap.light .empty-portrait::before { background: transparent; }
 
     .msg_container img {
     width: 40px;
@@ -1580,6 +1901,8 @@
         }
 
         function renderMessages(filterChannel = null) {
+            showHoverButtons(false);
+            currentHoverGap = null;
             const target = document.createElement('div');
             target.className = 'ccfolia_wrap';
 
@@ -1776,6 +2099,14 @@
             // 줄을 바로 wrap에 붙이지 않고 200개씩 묶는다 (updateChunkVisibility 참고)
             let chunk = null, chunkFill = 0;
             const addRow = row => {
+                const message = row.__msg;
+                if (selectedMessages.has(message)) row.classList.add('row-selected');
+                if (message.alignment) row.dataset.rowAlign = message.alignment;
+                if (message.hidePortrait) row.dataset.hidePortrait = 'true';
+                if (validNameColor(message.nameColor)) {
+                    row.dataset.nameColor = message.nameColor;
+                    row.dataset.baseNameColor = message.color || '#ccc';
+                }
                 if (!chunk || chunkFill === VCHUNK_SIZE) {
                     chunk = document.createElement('div');
                     chunk.className = 'vchunk';
@@ -1839,7 +2170,10 @@
                 ? window.allMessages
                 : window.allMessages.filter(m => window.selectedChannels.has(m.channel));
 
-            const narratorName = document.getElementById('narratorInput')?.value?.trim();
+            const narratorNames = new Set(document.getElementById('narratorInput').value.split(',').map(name => name.trim()).filter(Boolean));
+            const blankNameSystem = document.getElementById('blankNameSystem').checked;
+            const systemLayout = document.getElementById('systemLayout').value;
+            const hideSystemBadge = document.getElementById('hideSystemBadge').checked;
             const removeItalic = document.getElementById('removeNarratorItalicCheckbox')?.checked;
             const paddingValue = paddingInput.value || "16";
             const fontSizeValue = fontSizeInput.value || "16";
@@ -1856,13 +2190,29 @@
                 const channelBackgroundColor = getChannelColor(m.channel);
 
                 // SYSTEM 메시지 처리
-                if (m.name.toLowerCase() === 'system') {
+                if (!m.imageOnly && (m.name.trim().toLowerCase() === 'system' || (blankNameSystem && !m.name.trim()))) {
                     hasSystem = true;
                     const systemDiv = document.createElement('div');
                     systemDiv.className = 'player system ' + styleClass(`display:flex;overflow:hidden;padding:0px;border-top:1px solid rgba(255,255,255,0.08);background:${channelBackgroundColor};text-align:center;justify-content:center`);
                     systemDiv.dataset.channel = m.channel;
                     // 안쪽 상자들은 메시지마다 똑같으므로 systemInnerRule 한 벌로 뺀다.
-                    systemDiv.innerHTML = `<div class="infoWrap"><div class="imgWrap"></div></div><div class="textWrap"><p class="Uname">system</p><p class="Utext">${m.text}</p></div>`;
+                    systemDiv.dataset.journalName = m.name;
+                    if (systemLayout === 'inline') systemDiv.classList.add('system-inline');
+                    systemDiv.innerHTML = '<div class="textWrap"><span class="Utext tx"></span></div>';
+                    const body = systemDiv.querySelector('.Utext');
+                    if (m.html) body.innerHTML = m.html;
+                    else body.textContent = m.text;
+                    if (!hideSystemBadge) {
+                        const badge = document.createElement('span');
+                        badge.className = 'Uname';
+                        badge.textContent = 'system';
+                        body.before(badge);
+                    }
+                    body.querySelectorAll('.insimg').forEach(el => {
+                        const cls = [...el.classList].find(c => /^insimg-\d+$/.test(c));
+                        if (cls) usedInserted.add(Number(cls.slice(7)));
+                    });
+                    attachImagePaste(body, m);
                     systemDiv.__msg = m;
                     addRow(systemDiv);
                     return;
@@ -1885,22 +2235,29 @@
                 if (isInfoTab(m.channel)) gap.classList.add('info-message');
                 else if (isOther) gap.classList.add('other-message');
                 const isCompactOther = isOther && tabSettings.get(m.channel)?.compact;
-                const isNarrator = !!narratorName && m.name === narratorName && isMainTab(m.channel);
+                const visibleNameColor = validNameColor(m.nameColor) ? m.nameColor : m.color;
+                const isNarrator = narratorNames.has(m.name.trim()) && isMainTab(m.channel);
                 const useBubbleSurface = plainChannel && bubbleThemeEnabled;
                 const bubbleSurface = useBubbleSurface ? document.createElement('div') : gap;
                 if (useBubbleSurface) bubbleSurface.className = 'bubble-surface';
 
+                gap.__msg = m;
                 if (isCompactOther) {
                     gap.classList.add('other-compact');
                     const fontRule = styleClass(`font-size:${fontSizeValue}px`);
-                    const name = document.createElement('span'); name.className = `nm compact-name ${fontRule} ` + styleClass(`color:${m.color || '#ccc'}!important`); name.textContent = m.name;
+                    const name = document.createElement('span'); name.className = `nm compact-name ${fontRule} ` + styleClass(`color:${visibleNameColor || '#ccc'}!important`); name.textContent = m.name;
                     const text = document.createElement('span'); text.className = 'compact-text ' + fontRule; text.textContent = `: ${m.text}`;
+                    attachNameEdit(name, m);
+                    text.addEventListener('blur', () => {
+                        if (window.allMessages.includes(m)) recordMessageChanges([m], { text: text.innerText.replace(/^:\s?/, '') });
+                    });
                     bubbleSurface.append(name, text);
                     if (useBubbleSurface) gap.appendChild(bubbleSurface);
                     addRow(gap); return;
                 }
 
                 if (isNarrator) {
+                    gap.dataset.journalName = m.name;
                     // 서술자 스타일
                     const fontStyleValue = removeItalic ? 'normal' : 'italic';
                     gap.classList.add(styleClass(`display:flow-root;background-color:${channelBackgroundColor};position:relative;padding:2px 16px;text-align:center`));
@@ -1924,7 +2281,7 @@
                     gap.classList.add(styleClass(`display:flex;background-color:${cardBackgroundColor};position:relative;padding:${paddingValue}px 16px`));
 
                     if (m.imageOnly) gap.classList.add('image-row');
-                    if (!isCompactOther && !m.imageOnly && tabSettings.get(m.channel)?.portrait !== false) {
+                    if (!isCompactOther && !m.imageOnly && !m.hidePortrait && tabSettings.get(m.channel)?.portrait !== false) {
                         const msgContainer = document.createElement('div');
                         msgContainer.className = 'msg_container';
                         if (m.icon) {
@@ -1940,7 +2297,7 @@
                     const spanName = document.createElement('span');
                     spanName.textContent = m.name;
                     // 라이트 테마의 .light span { color !important }를 이기려면 규칙 쪽도 !important + 높은 명시도
-                    spanName.className = 'nm ' + styleClass(`color:${m.color}!important;font-weight:bold;font-size:${fontSizeValue}px`);
+                    spanName.className = 'nm ' + styleClass(`color:${visibleNameColor}!important;font-weight:bold;font-size:${fontSizeValue}px`);
                     attachNameEdit(spanName, m);
 
                     const spanBr = document.createElement('br');
@@ -1981,13 +2338,22 @@
                     if (useBubbleSurface) gap.appendChild(bubbleSurface);
                 }
 
-                gap.__msg = m;
-                if (!isNarrator && !blankRowTemplates.has(m.channel)) blankRowTemplates.set(m.channel, blankRowTemplate(gap));
+                if (!isNarrator && !m.imageOnly && !m.hidePortrait && !blankRowTemplates.has(m.channel)) blankRowTemplates.set(m.channel, blankRowTemplate(gap));
                 addRow(gap);
             });
 
             // wrap 안에 넣어야 outerHTML 내보내기에 규칙이 같이 딸려 나간다.
-            const allRules = [...styleRules, ...iconRules];
+            const allRules = [...styleRules, ...iconRules,
+                '.ccfolia_wrap [data-row-align="left"]{--row-align:left;--row-pack:flex-start;--row-direction:row}',
+                '.ccfolia_wrap [data-row-align="center"]{--row-align:center;--row-pack:center;--row-direction:row}',
+                '.ccfolia_wrap [data-row-align="right"]{--row-align:right;--row-pack:flex-start;--row-direction:row-reverse}',
+                '.ccfolia_wrap [data-row-align],.ccfolia_wrap [data-row-align] .bubble-surface{flex-direction:var(--row-direction);justify-content:var(--row-pack)!important;text-align:var(--row-align)!important}',
+                '.ccfolia_wrap [data-row-align] p,.ccfolia_wrap [data-row-align] .textWrap,.ccfolia_wrap [data-row-align] .Utext{text-align:var(--row-align)!important}',
+                '.ccfolia_wrap .system .Utext{white-space:pre-wrap}',
+                '.ccfolia_wrap .system.system-inline .Uname{display:inline-block;margin:0 .5em 0 0!important;vertical-align:baseline}',
+                '.ccfolia_wrap .system[data-row-align] .textWrap{margin:0!important}',
+                '.ccfolia_wrap .system[data-row-align="right"] .textWrap{margin-left:auto!important}'
+            ];
             if (usedInserted.size) allRules.push(INSERTED_BASE_RULE, ...[...usedInserted].map(insertedRule).filter(Boolean));
             if (filtered.some(m => m.imageOnly)) allRules.push(IMAGE_ROW_RULE);
             if (hasSystem) allRules.push(systemInnerRule());
@@ -2106,7 +2472,10 @@
                         renderMessages();
                     });
                 }
-                document.getElementById(`channelColor_${channel}`)?.addEventListener('change', saveChannelSettings);
+                document.getElementById(`channelColor_${channel}`)?.addEventListener('change', () => {
+                    saveChannelSettings();
+                    commitEditorSettings();
+                });
             });
             syncStyleChannelVisibility();
         }
@@ -2121,34 +2490,92 @@
         const SETTINGS_KEY = 'ccfolia_settings';
         const CHANNEL_SETTINGS_KEY = 'ccfolia_channel_settings';
 
-        function saveSettings() {
-            const s = {
+        function readEditorPreferences() {
+            return {
                 narratorName: document.getElementById('narratorInput')?.value ?? '',
                 removeItalic: document.getElementById('removeNarratorItalicCheckbox')?.checked ?? false,
+                blankNameSystem: document.getElementById('blankNameSystem').checked,
+                systemLayout: document.getElementById('systemLayout').value,
+                hideSystemBadge: document.getElementById('hideSystemBadge').checked,
                 padding: document.getElementById('paddingInput')?.value ?? '16',
                 fontSize: document.getElementById('fontSizeInput')?.value ?? '16',
                 lightTheme: document.getElementById('lightThemeToggle')?.checked ?? false,
                 bubbleTheme: document.getElementById('bubbleThemeToggle')?.checked ?? true,
             };
-            localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
+        }
+
+        function saveSettings() {
+            localStorage.setItem(SETTINGS_KEY, JSON.stringify(readEditorPreferences()));
+        }
+
+        function applyEditorPreferences(s) {
+            document.getElementById('narratorInput').value = s.narratorName ?? '';
+            document.getElementById('removeNarratorItalicCheckbox').checked = !!s.removeItalic;
+            document.getElementById('blankNameSystem').checked = !!s.blankNameSystem;
+            document.getElementById('systemLayout').value = s.systemLayout === 'inline' ? 'inline' : 'stacked';
+            document.getElementById('hideSystemBadge').checked = !!s.hideSystemBadge;
+            paddingInput.value = s.padding ?? '16';
+            fontSizeInput.value = s.fontSize ?? '16';
+            lightThemeToggle.checked = !!s.lightTheme;
+            bubbleThemeToggle.checked = s.bubbleTheme ?? true;
+            bubbleThemeEnabled = bubbleThemeToggle.checked;
+            previewArea.classList.toggle('light', lightThemeToggle.checked);
         }
 
         function loadSettings() {
             const raw = localStorage.getItem(SETTINGS_KEY);
             if (!raw) return;
             try {
-                const s = JSON.parse(raw);
-                if (s.narratorName != null) document.getElementById('narratorInput').value = s.narratorName;
-                document.getElementById('removeNarratorItalicCheckbox').checked = s.removeItalic ?? false;
-                if (s.padding != null) document.getElementById('paddingInput').value = s.padding;
-                if (s.fontSize != null) document.getElementById('fontSizeInput').value = s.fontSize;
-                const lightToggle = document.getElementById('lightThemeToggle');
-                lightToggle.checked = s.lightTheme ?? false;
-                bubbleThemeToggle.checked = s.bubbleTheme ?? true;
-                bubbleThemeEnabled = bubbleThemeToggle.checked;
-                if (lightToggle.checked) previewArea.classList.add('light');
+                applyEditorPreferences(JSON.parse(raw));
             } catch (e) {
                 console.warn('설정 불러오기 실패:', e);
+            }
+        }
+
+        let lastEditorSettings;
+
+        function captureEditorSettings() {
+            return {
+                preferences: readEditorPreferences(),
+                imageMaxWidth: document.getElementById('imageMaxWidth').value,
+                tabs: [...tabSettings].map(([channel, settings]) => [channel, { ...settings }]),
+                colors: { ...channelColors },
+                lightColors: { ...savedChannelColors },
+                bubbleColors: { ...bubbleOriginalColors },
+                customBubbleColors: [...bubbleCustomColors],
+                journalImages: { ...journalImages },
+                journalLinks: { ...journalLinks }
+            };
+        }
+
+        function restoreEditorSettings(state) {
+            applyEditorPreferences(state.preferences);
+            document.getElementById('imageMaxWidth').value = state.imageMaxWidth;
+            tabSettings = new Map(state.tabs.map(([channel, settings]) => [channel, { ...settings }]));
+            channelColors = { ...state.colors };
+            savedChannelColors = { ...state.lightColors };
+            bubbleOriginalColors = { ...state.bubbleColors };
+            bubbleCustomColors = new Set(state.customBubbleColors);
+            journalImages = { ...state.journalImages };
+            journalLinks = { ...state.journalLinks };
+            document.querySelectorAll('#channelColorSettings input[data-channel]').forEach(input => {
+                if (channelColors[input.dataset.channel]) input.value = channelColors[input.dataset.channel];
+            });
+            saveSettings();
+            saveChannelSettings();
+            applyImportedPortraits();
+            syncStyleChannelVisibility();
+            if (!document.getElementById('outputTabModal').classList.contains('hidden')) renderOutputTabSettings();
+            if (!document.getElementById('journalImageModal').classList.contains('hidden') && tabSettings.has(activeOutputTab)) openJournalImageModal(activeOutputTab);
+            lastEditorSettings = state;
+        }
+
+        function commitEditorSettings() {
+            const before = lastEditorSettings;
+            const after = captureEditorSettings();
+            lastEditorSettings = after;
+            if (before && JSON.stringify(before) !== JSON.stringify(after)) {
+                recordEdit(() => restoreEditorSettings(before), () => restoreEditorSettings(after));
             }
         }
 
@@ -2185,6 +2612,14 @@
             document.getElementById(id)?.addEventListener('change', saveSettings);
         });
 
+        ['narratorInput', 'removeNarratorItalicCheckbox', 'blankNameSystem', 'systemLayout', 'hideSystemBadge'].forEach(id => {
+            document.getElementById(id).addEventListener('change', () => {
+                saveSettings();
+                commitEditorSettings();
+                if (window.allMessages?.length) redrawEditedPreview();
+            });
+        });
+        document.getElementById('imageMaxWidth').addEventListener('change', commitEditorSettings);
         loadSettings();
 
         // ─── HTML 업로드 → 파싱 (확장 뷰어 출력 형식) ───────────────
@@ -2220,7 +2655,6 @@
                         msgs.push({ name: 'system', text, icon: '', exportIcon: '', color: '#ccc', channel: '메인', date: '' });
                         return;
                     }
-                    if (!name) name = icon ? '이름 없음' : 'system';
                     if (text === '' && !icon) return; // 본문도 초상화도 없는 빈 행
                     // 플러그인 뷰어 출력에는 채널 표기가 없고 시각도 표시용 문자열뿐이라 date는 비운다.
                     msgs.push({ name, text, icon, exportIcon: icon, color: color || '#ccc', channel: '메인', date: '' });
@@ -2239,10 +2673,9 @@
                     color = h6.style.color || '';
                 }
                 const p = x.querySelector('p');
-                const text = stripEdited(p ? p.textContent : '');
+                const text = stripEdited(blockText(p));
                 const img = x.querySelector('.MuiListItemAvatar-root img') || x.querySelector('img');
                 const icon = img ? (img.getAttribute('src') || '') : '';
-                if (!name) name = icon ? '이름 없음' : 'system';
                 if (text === '' && !icon && name.toLowerCase() !== 'system') return;
                 msgs.push({ name, text, icon, exportIcon: icon, color: color || '#ccc', channel: '메인', date: '' });
             });
@@ -2375,7 +2808,7 @@
                 const roll = [...article.querySelectorAll('.roll-result')].map(blockText).filter(Boolean).join('\n');
                 let text = stripEdited([body, roll].filter(Boolean).join('\n'));
 
-                if (article.classList.contains('system') || !speaker) {
+                if (article.classList.contains('system')) {
                     if (!text) { // 시스템 메시지는 .message-text 없이 본문만 있을 수 있다
                         const copy = article.cloneNode(true);
                         copy.querySelectorAll('.message-header, .timestamp, .channel-name, .edited').forEach(n => n.remove());
@@ -2389,7 +2822,7 @@
                 const avatarClass = [...(article.querySelector('.avatar')?.classList || [])].find(c => /^avatar-image-\d+$/.test(c));
                 const icon = avatarClass ? (avatars.get(avatarClass.replace('avatar-image-', '')) || '') : '';
                 if (!text && !icon) return; // 본문도 초상화도 없는 빈 행
-                const name = blockText(speaker) || (icon ? '이름 없음' : 'system');
+                const name = blockText(speaker);
                 const color = (speaker.style.getPropertyValue('--speaker-color') || '').trim() || '#ccc';
                 const date = article.querySelector('.timestamp')?.getAttribute('datetime') || '';
                 messages.push({ name, text, icon, exportIcon: icon, color, channel, date });
@@ -2409,7 +2842,7 @@
                 if (spans.length < 3) return null;
                 const textOf = node => { const copy = node.cloneNode(true); copy.querySelectorAll('br').forEach(br => br.replaceWith('\n')); return copy.textContent.trim(); };
                 const channel = textOf(spans[0]).replace(/^\[|\]$/g, '').trim() || '메인';
-                const name = textOf(spans[1]) || 'system';
+                const name = textOf(spans[1]);
                 const text = stripEdited(textOf(spans[2]));
                 if (!text && name.toLowerCase() !== 'system') return null;
                 return { name, text, icon: '', color: p.style.color || '#ccc', channel };
@@ -2457,39 +2890,44 @@
                 return cls ? (avatars.get(cls.slice(13)) || '') : '';
             };
 
-            const nodes = [...doc.querySelectorAll('.m,[data-index],.gap,article,li,tr')]
-                .filter(n => !n.parentElement?.closest('.m,[data-index],.gap,article,li,tr'));
+            const nodes = [...doc.querySelectorAll('.m,[data-index],.gap,.player.system,article,li,tr')]
+                .filter(n => !n.parentElement?.closest('.m,[data-index],.gap,.player.system,article,li,tr'));
             const messages = [];
             nodes.forEach(x => {
                 const compact = x.matches('.m') || x.querySelector('.nm,.tx');
-                const nameNode = x.querySelector('.nm,[class*="name"],[class*="user"],h6');
-                const textNode = x.querySelector('.tx,[class*="message"],[class*="text"]') || x.querySelector('p');
-                let name = nameNode ? nameNode.textContent.trim() : '';
-                let text = textNode ? textNode.textContent.trim() : x.textContent.trim();
+                const nameNode = x.querySelector('.nm,.Uname,[class*="name"],[class*="user"],h6');
+                let textNode = x.querySelector('.tx,.Utext,.compact-text,[class*="message"],[class*="text"]') || x.querySelector('p');
+                if (textNode?.matches('p.tx') && nameNode?.parentElement === textNode) {
+                    textNode = textNode.cloneNode(true);
+                    const speaker = textNode.querySelector('.nm');
+                    if (speaker) {
+                        if (speaker.nextSibling?.nodeName === 'BR') speaker.nextSibling.remove();
+                        speaker.remove();
+                    }
+                }
+                let name = x.dataset.journalName ?? (nameNode ? nameNode.textContent.trim() : x.matches('.player.system') ? 'system' : '');
+                let text = blockText(textNode || x);
+                if (textNode?.matches('.compact-text')) text = text.replace(/^:\s*/, '');
                 const html = bodyHtml(textNode);
                 // 이미지만 있는 줄은 글자가 없어도 버리면 안 된다.
                 const imageOnly = x.classList?.contains('image-row');
                 if (!compact && !name && !text && !html) return;
                 const dt = nameNode?.querySelector('.dt');
                 if (dt) { name = name.replace(dt.textContent, '').trim(); }
-                if (!name && !imageOnly) name = 'system';
                 text = stripEdited(text);
                 if (!text && !html && name.toLowerCase() !== 'system') return;
                 const icon = x.querySelector('img')?.getAttribute('src') || classIcon(x);
                 const channel = sourceChannel(x);
-                messages.push({ name, text, icon, exportIcon: icon, color: nameNode?.style.color || classColor(nameNode) || '#ccc', channel, ...(html ? { html } : {}), ...(imageOnly ? { imageOnly: true } : {}) });
+                const alignment = ['left', 'center', 'right'].includes(x.dataset.rowAlign) ? x.dataset.rowAlign : '';
+                const hidePortrait = x.dataset.hidePortrait === 'true';
+                const nameColor = validNameColor(x.dataset.nameColor) ? x.dataset.nameColor : '';
+                const baseColor = nameColor && CSS.supports('color', x.dataset.baseNameColor) ? x.dataset.baseNameColor : '';
+                messages.push({ name, text, icon, exportIcon: icon, color: baseColor || nameNode?.style.color || classColor(nameNode) || '#ccc', channel, alignment, hidePortrait, ...(nameColor ? { nameColor } : {}), ...(html ? { html } : {}), ...(imageOnly ? { imageOnly: true } : {}) });
             });
             return messages;
         }
 
-        // 초상화 우선순위
-        //   1) 그 메시지에 실제로 박혀 있던 초상화 (m.exportIcon)
-        //   2) 사용자가 직접 지정한 것 (저널 이미지/링크, 탭 공통 URL)
-        //   3) 이름으로 찾은 대체 초상화
-        // 신규 내보내기와 플러그인 로그는 메시지마다 초상화를 들고 있으므로 1)에서 끝난다.
-        // 2)·3)은 초상화가 없는 구 내보내기를 메울 때만 쓰인다.
-        // (저널 핀을 걸면 로그 중간의 초상화 교체가 한 장으로 납작해지므로, 내장 초상화가
-        //  있는 탭은 openJournalImageModal에서 핀 자체를 잠근다)
+        // 직접 지정한 초상화가 있으면 메시지의 원본 이미지보다 우선한다.
         function applyImportedPortraits() {
             const hasPlugin = pluginMainMessages.length > 0;
             const mainUseCount = new Map();
@@ -2497,11 +2935,12 @@
                 const setting = tabSettings.get(m.channel);
                 const journalKey = `${m.channel}|${m.name}`;
                 if (pluginJournalColors.has(m.name)) m.color = pluginJournalColors.get(m.name);
+                const override = journalImages[journalKey] || journalLinks[journalKey] || setting?.customUrl;
                 if (isMainTab(m.channel)) {
                     // 이름별 등장 순서로 플러그인 로그와 짝을 맞추므로, 건너뛰더라도 카운터는 항상 올린다.
                     const index = mainUseCount.get(m.name) || 0;
                     mainUseCount.set(m.name, index + 1);
-                    if (m.exportIcon) { m.icon = m.exportIcon; return; }
+                    if (override || m.exportIcon) { m.icon = override || m.exportIcon; return; }
                     if (!hasPlugin) { m.icon = ''; return; }
                     const source = pluginMainMessages.filter(x => x.name === m.name)[index];
                     if (source) {
@@ -2513,7 +2952,7 @@
                 } else if (setting && !setting.portrait) {
                     m.icon = '';
                 } else {
-                    m.icon = m.exportIcon || journalImages[journalKey] || journalLinks[journalKey] || setting?.customUrl || whisperPortraits[m.channel] || (pluginPortraits.get(m.name) || []).at(-1) || '';
+                    m.icon = override || m.exportIcon || whisperPortraits[m.channel] || (pluginPortraits.get(m.name) || []).at(-1) || '';
                 }
             });
         }
@@ -2627,6 +3066,11 @@
         }
 
         function rebuildFromLoadedFiles() {
+            undoEdits.length = 0;
+            redoEdits.length = 0;
+            updateHistoryButtons();
+            selectedMessages.clear();
+            selectionAnchor = null;
             renderLogFileChips();
             const exportFiles = loadedLogFiles.filter(f => f.kind === 'export');
             const pluginFiles = loadedLogFiles.filter(f => f.kind === 'plugin');
@@ -2641,7 +3085,7 @@
             pluginMainMessages = [];
             // 플러그인 로그는 그 자체가 메시지 소스이면서 초상화 변경 이력이기도 하다.
             pluginPortraits = pluginFiles.length ? getPluginPortraits(pluginFiles[0].messages) : new Map();
-            window.allMessages = mergeLogMessages(exportFiles, pluginFiles);
+            window.allMessages = mergeLogMessages(exportFiles, pluginFiles).map(message => ({ ...message }));
             if (!pluginFiles.length) pluginPortraits = collectPortraitCandidates(window.allMessages);
             window.selectedChannels = new Set(); whisperPortraits = {};
             // 저널별로 찍어둔 초상화는 그 로그에만 해당한다. 파일을 새로 넣으면 비워야
@@ -2650,6 +3094,7 @@
             initTabSettings(); renderChannelFilter(); createChannelColorSettings();
             if (bubbleThemeEnabled) applyBubbleDefaultColors();
             applyImportedPortraits();
+            lastEditorSettings = captureEditorSettings();
             renderMessages();
         }
 
@@ -2822,20 +3267,22 @@
 
         // 이름도 본문과 같이 메시지 객체에 되돌려 쓴다 (안 그러면 새로 끼운 줄의 이름이 날아간다).
         function attachNameEdit(spanName, m) {
-            spanName.addEventListener('blur', () => { m.name = spanName.innerText.trim(); });
+            spanName.addEventListener('blur', () => {
+                dirtyChatFields.delete(spanName);
+                if (window.allMessages.includes(m)) recordMessageChanges([m], { name: spanName.innerText.trim() });
+            });
         }
 
         // 본문 편집 중 이미지 붙여넣기. 편집 결과는 메시지 객체에 되돌려 써야
         // 다시 그릴 때(regeneratePreview) 살아남는다.
         function attachImagePaste(spanText, m) {
             const save = () => {
-                if (spanText.querySelector('.insimg')) {
-                    m.html = sanitizeBodyHtml(spanText.innerHTML);
-                    m.text = spanText.innerText.replace(/\r\n?/g, '\n');
-                } else {
-                    m.text = spanText.innerText.replace(/\r\n?/g, '\n');
-                    delete m.html;
-                }
+                dirtyChatFields.delete(spanText);
+                if (!window.allMessages.includes(m)) return;
+                recordMessageChanges([m], {
+                    text: spanText.innerText.replace(/\r\n?/g, '\n'),
+                    html: spanText.querySelector('.insimg') ? sanitizeBodyHtml(spanText.innerHTML) : undefined
+                });
             };
             spanText.addEventListener('blur', save);
             spanText.addEventListener('paste', async e => {
@@ -2846,6 +3293,7 @@
                 const plain = (data.getData('text/plain') || '').trim();
                 const range = document.getSelection()?.rangeCount ? document.getSelection().getRangeAt(0).cloneRange() : null;
                 const info = await imageFromClipboard(data);
+                if (!spanText.isConnected || !window.allMessages.includes(m)) return;
                 const node = info ? makeInsertedNode(registerInsertedImage(info))
                     : document.createTextNode(plain); // 이미지를 못 가져오면 주소라도 남긴다
                 if (range && spanText.contains(range.commonAncestorContainer)) {
@@ -2918,12 +3366,16 @@
 
         // 클릭하면 편집, 엔터로 확정. 렌더 직후와 새로 끼운 줄에 똑같이 걸어 준다.
         function wireEditing(root) {
-            root.querySelectorAll('.gap span:not(.insimg)').forEach(span => {
+            root.querySelectorAll('.gap span:not(.insimg), .player.system .Utext').forEach(span => {
                 span.addEventListener('click', () => {
                     span.setAttribute('contenteditable', 'true');
                     span.focus();
                 });
-                span.addEventListener('blur', () => span.removeAttribute('contenteditable'));
+                span.addEventListener('input', () => dirtyChatFields.add(span));
+                span.addEventListener('blur', () => {
+                    dirtyChatFields.delete(span);
+                    span.removeAttribute('contenteditable');
+                });
                 span.addEventListener('keydown', e => {
                     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); span.blur(); }
                 });
@@ -2943,17 +3395,24 @@
             const source = gap.__msg;
             const channel = source?.channel || [...blankRowTemplates.keys()][0];
             const template = blankRowTemplates.get(channel);
-            if (!template) return null;
+            if (!template) {
+                const fallback = document.createElement('div');
+                fallback.className = 'gap';
+                fallback.dataset.channel = channel;
+                fallback.innerHTML = '<p><span class="tx"></span></p>';
+                blankRowTemplates.set(channel, fallback);
+            }
 
             const msg = {
                 name: '', text: '', icon: '', exportIcon: '', color: source?.color || '#ccc',
                 channel, date: '', imageOnly: true
             };
-            const index = window.allMessages.indexOf(source);
-            if (index >= 0) window.allMessages.splice(index + 1, 0, msg);
-            else window.allMessages.push(msg);
+            const next = window.allMessages.slice();
+            const index = next.indexOf(source);
+            next.splice(index >= 0 ? index + 1 : next.length, 0, msg);
+            changeMessageList(next);
 
-            const node = stripToImageRow(template.cloneNode(true));
+            const node = stripToImageRow(blankRowTemplates.get(channel).cloneNode(true));
             node.__msg = msg;
             node.querySelectorAll('.tx').forEach(el => attachImagePaste(el, msg));
             // 줄이 하나 늘었으니 이 묶음의 고정 높이는 더 이상 맞지 않는다.
@@ -3030,7 +3489,7 @@
             if (true) {
                 const link = document.createElement('input');
                 link.className = 'link-input'; link.placeholder = '이 탭 전체에 사용할 이미지 링크 (선택)'; link.value = setting.customUrl;
-                link.onchange = () => { setting.customUrl = link.value.trim(); applyImportedPortraits(); renderMessages(); };
+                link.onchange = () => { setting.customUrl = link.value.trim(); commitEditorSettings(); applyImportedPortraits(); renderMessages(); };
                 detail.appendChild(link);
                 const names = [...new Set(window.allMessages.filter(m => m.channel === channel).map(m => m.name).filter(Boolean))];
                 names.forEach(name => {
@@ -3042,7 +3501,7 @@
                         const button = document.createElement('button'); button.type = 'button'; button.className = 'portrait-option';
                         if (journalImages[`${channel}|${name}`] === url) button.classList.add('active');
                         const img = document.createElement('img'); img.src = url; img.alt = name; button.appendChild(img);
-                        button.onclick = () => { journalImages[`${channel}|${name}`] = url; applyImportedPortraits(); renderTabDetail(channel); renderMessages(); };
+                        button.onclick = () => { journalImages[`${channel}|${name}`] = url; commitEditorSettings(); applyImportedPortraits(); renderTabDetail(channel); renderMessages(); };
                         row.appendChild(button);
                     });
                     detail.appendChild(row);
@@ -3058,17 +3517,17 @@
                 const row = document.createElement('div'); row.className = 'modal-tab-row';
                 const open = document.createElement('button'); open.type = 'button'; open.className = 'tab-setting-btn' + (setting.enabled ? '' : ' tab-disabled'); open.textContent = channel; open.onclick = () => openJournalImageModal(channel);
                 const output = document.createElement('label'); output.className = 'output-switch'; output.title = '출력 여부'; const outputCheck = document.createElement('input'); outputCheck.type = 'checkbox'; outputCheck.checked = setting.enabled; const slider = document.createElement('span'); slider.className = 'output-slider'; output.append(outputCheck, slider);
-                const badge = document.createElement('button'); badge.type = 'button'; badge.className = 'tab-toggle' + (setting.badge ? ' active' : ''); badge.textContent = '뱃지'; badge.onclick = () => { setting.badge = !setting.badge; badge.classList.toggle('active', setting.badge); renderMessages(); };
-                const portrait = document.createElement('button'); portrait.type = 'button'; portrait.className = 'tab-toggle' + (setting.portrait ? ' active' : ''); portrait.textContent = '포트레'; portrait.onclick = () => { setting.portrait = !setting.portrait; portrait.classList.toggle('active', setting.portrait); applyImportedPortraits(); renderMessages(); };
+                const badge = document.createElement('button'); badge.type = 'button'; badge.className = 'tab-toggle' + (setting.badge ? ' active' : ''); badge.textContent = '뱃지'; badge.onclick = () => { setting.badge = !setting.badge; commitEditorSettings(); badge.classList.toggle('active', setting.badge); renderMessages(); };
+                const portrait = document.createElement('button'); portrait.type = 'button'; portrait.className = 'tab-toggle' + (setting.portrait ? ' active' : ''); portrait.textContent = '포트레'; portrait.onclick = () => { setting.portrait = !setting.portrait; commitEditorSettings(); portrait.classList.toggle('active', setting.portrait); applyImportedPortraits(); renderMessages(); };
                 let compact;
                 if (isOtherTab(channel)) {
-                    compact = document.createElement('button'); compact.type = 'button'; compact.className = 'tab-toggle' + (setting.compact ? ' active' : ''); compact.textContent = '간략화'; compact.onclick = () => { setting.compact = !setting.compact; compact.classList.toggle('active', setting.compact); syncDisabled(); renderMessages(); };
+                    compact = document.createElement('button'); compact.type = 'button'; compact.className = 'tab-toggle' + (setting.compact ? ' active' : ''); compact.textContent = '간략화'; compact.onclick = () => { setting.compact = !setting.compact; commitEditorSettings(); compact.classList.toggle('active', setting.compact); syncDisabled(); renderMessages(); };
                 }
                 const syncDisabled = () => {
                     [badge, portrait].forEach(button => { button.classList.toggle('tab-option-disabled', !setting.enabled || setting.compact); button.disabled = !setting.enabled || setting.compact; });
                     if (compact) { compact.classList.toggle('tab-option-disabled', !setting.enabled); compact.disabled = !setting.enabled; }
                 };
-                outputCheck.onchange = () => { setting.enabled = outputCheck.checked; open.classList.toggle('tab-disabled', !setting.enabled); syncDisabled(); syncStyleChannelVisibility(); setTimeout(() => regeneratePreview('출력 탭을 다시 생성 중...'), 0); };
+                outputCheck.onchange = () => { setting.enabled = outputCheck.checked; commitEditorSettings(); open.classList.toggle('tab-disabled', !setting.enabled); syncDisabled(); syncStyleChannelVisibility(); setTimeout(() => regeneratePreview('출력 탭을 다시 생성 중...'), 0); };
                 row.append(output, open, badge, portrait, ...(compact ? [compact] : []));
                 syncDisabled();
                 list.appendChild(row);
@@ -3076,41 +3535,43 @@
             document.getElementById('outputTabDetail').innerHTML = '<span style="color:#6b7280;font-size:12px;">스위치로 출력 여부를 바꾸고, 탭 제목을 누르면 저널별 이미지 설정이 열립니다.</span>';
         }
 
-        // 그 탭 메시지에 초상화가 이미 박혀 있으면 저널별 이미지 핀은 필요 없다.
-        // 핀을 걸면 로그 중간의 초상화 교체가 한 장으로 납작해지므로 오히려 손해다.
-        const channelHasOwnPortraits = channel => window.allMessages.some(m => m.channel === channel && m.exportIcon);
-
         function openJournalImageModal(channel) {
             activeOutputTab = channel;
             const list = document.getElementById('journalImageList');
             const note = document.getElementById('journalImageModalNote');
+            const localPortraits = collectPortraitCandidates(window.allMessages.filter(message => message.channel === channel));
             list.innerHTML = '';
-            if (isMainTab(channel) || channelHasOwnPortraits(channel)) {
-                note.textContent = `[${channel}] 탭은 로그에 기록된 메시지별 초상화를 그대로 사용합니다.`;
-                list.innerHTML = '<p class="image-fallback">따로 지정할 필요가 없어 잠겨 있습니다. 초상화를 아예 빼려면 출력 탭 설정의 「포트레」를 끄세요.</p>';
-                document.getElementById('journalImageModal').classList.remove('hidden');
-                return;
-            }
             note.textContent = `[${channel}] 탭에서 발화한 저널별 이미지입니다. 정사각형 썸네일을 눌러 선택하세요.`;
             {
                 const names = [...new Set(window.allMessages.filter(m => m.channel === channel).map(m => m.name).filter(Boolean))];
                 names.forEach(name => {
-                    const key = `${channel}|${name}`, candidates = pluginPortraits.get(name) || [];
+                    const key = `${channel}|${name}`;
+                    const candidates = [...new Set([...(localPortraits.get(name) || []), ...(pluginPortraits.get(name) || [])])];
                     const block = document.createElement('section'); block.className = 'image-journal-block';
                     const title = document.createElement('div'); title.className = 'image-journal-title'; title.textContent = name; block.appendChild(title);
                     const grid = document.createElement('div'); grid.className = 'image-choice-grid';
-                    const currentImage = journalImages[key] || journalLinks[key] || tabSettings.get(channel)?.customUrl || candidates.at(-1) || '';
+                    const currentImage = journalImages[key] || journalLinks[key] || '';
                     candidates.forEach(url => {
                         const button = document.createElement('button'); button.type = 'button'; button.className = 'image-choice' + (currentImage === url ? ' active' : '');
                         const image = document.createElement('img'); image.src = url; image.alt = name + ' 포트레이트'; button.appendChild(image);
-                        button.onclick = () => { journalImages[key] = url; delete journalLinks[key]; applyImportedPortraits(); openJournalImageModal(channel); renderMessages(); };
+                        button.onclick = () => { journalImages[key] = url; delete journalLinks[key]; commitEditorSettings(); applyImportedPortraits(); openJournalImageModal(channel); renderMessages(); };
                         grid.appendChild(button);
                     });
                     if (candidates.length) block.appendChild(grid);
-                    const link = document.createElement('input'); link.className = 'link-input'; link.placeholder = '이미지 링크로 대체 (선택)'; link.value = journalLinks[key] || tabSettings.get(channel)?.customUrl || '';
-                    link.onchange = () => { journalLinks[key] = link.value.trim(); delete journalImages[key]; applyImportedPortraits(); renderMessages(); };
-                    block.appendChild(link);
-                    if (!candidates.length) { const note = document.createElement('div'); note.className = 'image-fallback'; note.textContent = 'main에서 같은 이름의 저널 이미지를 찾지 못했습니다. 링크를 입력하세요.'; block.appendChild(note); }
+                    const link = document.createElement('input'); link.className = 'link-input'; link.placeholder = '이미지 링크로 대체 (선택)'; link.value = journalLinks[key] || '';
+                    link.onchange = () => {
+                        journalLinks[key] = link.value.trim();
+                        delete journalImages[key];
+                        commitEditorSettings();
+                        applyImportedPortraits();
+                        openJournalImageModal(channel);
+                        renderMessages();
+                    };
+                    const reset = document.createElement('button');
+                    reset.type = 'button'; reset.textContent = '원본 사용'; reset.disabled = !currentImage;
+                    reset.onclick = () => { delete journalImages[key]; delete journalLinks[key]; commitEditorSettings(); applyImportedPortraits(); openJournalImageModal(channel); renderMessages(); };
+                    block.append(link, reset);
+                    if (!candidates.length) { const note = document.createElement('div'); note.className = 'image-fallback'; note.textContent = '이 저널에 저장된 포트레가 없습니다. 이미지 링크를 입력할 수 있습니다.'; block.appendChild(note); }
                     list.appendChild(block);
                 });
                 if (!list.children.length) list.innerHTML = '<p class="image-fallback">이 탭에서 저널을 찾지 못했습니다.</p>';
@@ -3123,6 +3584,7 @@
         document.getElementById('outputTabModal').addEventListener('click', e => { if (e.target.id === 'outputTabModal') e.target.classList.add('hidden'); });
         document.getElementById('journalImageModalClose').onclick = () => document.getElementById('journalImageModal').classList.add('hidden');
         document.getElementById('journalImageModal').addEventListener('click', e => { if (e.target.id === 'journalImageModal') e.target.classList.add('hidden'); });
+        lastEditorSettings = captureEditorSettings();
     </script>
 </body>
 
